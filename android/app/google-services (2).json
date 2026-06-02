@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562409321853",
+    "project_id": "mgz-app-98294",
+    "storage_bucket": "mgz-app-98294.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562409321853:android:fbeb58efb907a2c5108814",
+        "android_client_info": {
+          "package_name": "com.example.mgz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
