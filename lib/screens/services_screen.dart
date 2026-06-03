@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/services_provider.dart';
+import '../utils/services_excel_importer.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -15,6 +17,128 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  static const XTypeGroup _excelTypeGroup = XTypeGroup(
+    label: 'Excel',
+    extensions: ['xlsx'],
+    mimeTypes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  );
+
+  bool _isImportingServices = false;
+
+  Future<void> _downloadServicesTemplate() async {
+    final services = Provider.of<ServicesProvider>(context, listen: false).services;
+    final rows = services
+        .map(
+          (service) => ServiceExcelRow(
+            name: service.name,
+            price: service.price,
+            category: service.category,
+          ),
+        )
+        .toList();
+    final bytes = ServicesExcelImporter.buildTemplate(rows: rows);
+    final saveLocation = await getSaveLocation(
+      acceptedTypeGroups: const [_excelTypeGroup],
+      suggestedName: 'base_servicios.xlsx',
+    );
+
+    if (saveLocation == null) return;
+
+    final file = XFile.fromData(
+      bytes,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      name: 'base_servicios.xlsx',
+    );
+    await file.saveTo(saveLocation.path);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Archivo de servicios descargado'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _importServicesFromExcel() async {
+    final selectedFile = await openFile(acceptedTypeGroups: const [_excelTypeGroup]);
+    if (selectedFile == null) return;
+
+    setState(() {
+      _isImportingServices = true;
+    });
+
+    try {
+      final bytes = await selectedFile.readAsBytes();
+      final result = ServicesExcelImporter.parse(bytes);
+      if (result.rows.isEmpty) {
+        _showImportErrors(result.errors);
+        return;
+      }
+
+      final importedCount = await Provider.of<ServicesProvider>(context, listen: false).importServices(result.rows);
+      if (!mounted) return;
+
+      final errorSummary = result.hasErrors ? ' Algunas filas se omitieron por errores.' : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Se importaron $importedCount servicio${importedCount == 1 ? '' : 's'}.$errorSummary'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      if (result.hasErrors) {
+        _showImportErrors(result.errors);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      _showImportErrors(['No se pudo leer el archivo Excel seleccionado. Verifica que sea un .xlsx válido.']);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImportingServices = false;
+        });
+      }
+    }
+  }
+
+  void _showImportErrors(List<String> errors) {
+    if (!mounted || errors.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Revisar importación'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: errors.take(8).map((error) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text('• $error'),
+                )).toList()
+                  ..addAll(
+                    errors.length > 8
+                        ? [Text('Y ${errors.length - 8} error${errors.length - 8 == 1 ? '' : 'es'} más.')]
+                        : const [],
+                  ),
+              ),
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Entendido'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -274,6 +398,24 @@ class _ServicesScreenState extends State<ServicesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Base de Servicios'),
+        actions: [
+          IconButton(
+            onPressed: _downloadServicesTemplate,
+            tooltip: 'Descargar base Excel',
+            icon: const Icon(Icons.download_outlined),
+          ),
+          IconButton(
+            onPressed: _isImportingServices ? null : _importServicesFromExcel,
+            tooltip: 'Importar servicios desde Excel',
+            icon: _isImportingServices
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.upload_file_outlined),
+          ),
+        ],
       ),
       body: Column(
         children: [
