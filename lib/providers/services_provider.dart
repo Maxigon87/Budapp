@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 
+import '../utils/services_excel_importer.dart';
+
 class ServiceItem {
   static const String defaultCategory = 'Sin categoría';
 
@@ -90,6 +92,34 @@ class ServicesProvider extends ChangeNotifier {
 
     // Firebase Sync
     await _syncServiceToCloud(item);
+  }
+
+  Future<int> importServices(List<ServiceExcelRow> rows) async {
+    final importedItems = <ServiceItem>[];
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+
+    for (var index = 0; index < rows.length; index++) {
+      final row = rows[index];
+      final id = '${timestamp}_$index';
+      final item = ServiceItem(
+        id: id,
+        name: row.name,
+        price: row.price,
+        category: _normalizeCategory(row.category),
+      );
+      importedItems.add(item);
+      await _box.put(id, item.toMap());
+    }
+
+    if (importedItems.isEmpty) return 0;
+
+    notifyListeners();
+
+    for (final item in importedItems) {
+      await _syncServiceToCloud(item);
+    }
+
+    return importedItems.length;
   }
 
   Future<void> updateService(String id, String name, double price, String category) async {
