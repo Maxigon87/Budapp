@@ -82,19 +82,23 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Premium UI elevation wrapper helper
-  Widget _buildPremiumCard({
+  Widget _buildPremiumCard(
+    BuildContext context, {
     required Widget child,
     EdgeInsetsGeometry? margin,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
+            color: Colors.black.withOpacity(isDark ? 0.18 : 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -127,9 +131,16 @@ class HomeScreen extends StatelessWidget {
     }
 
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final pageBackground = theme.scaffoldBackgroundColor;
+    final primaryText = colorScheme.onSurface;
+    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
+    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: pageBackground,
       body: CustomScrollView(
         slivers: [
           // Elegant corporate app bar with minimal cloud sync status
@@ -137,7 +148,7 @@ class HomeScreen extends StatelessWidget {
             floating: true,
             pinned: true,
             elevation: 0,
-            backgroundColor: const Color(0xFFF8FAFC),
+            backgroundColor: pageBackground,
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
@@ -156,10 +167,10 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   "MGZ App",
                   style: TextStyle(
-                    color: Color(0xFF0F172A),
+                    color: primaryText,
                     fontWeight: FontWeight.w900,
                     fontSize: 20,
                     letterSpacing: 0.5,
@@ -233,11 +244,11 @@ class HomeScreen extends StatelessWidget {
                             width: 56,
                             height: 56,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildDefaultCompanyLogo(),
+                            errorBuilder: (context, error, stackTrace) => _buildDefaultCompanyLogo(context),
                           ),
                         )
                       else
-                        _buildDefaultCompanyLogo(),
+                        _buildDefaultCompanyLogo(context),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -245,10 +256,10 @@ class HomeScreen extends StatelessWidget {
                           children: [
                             Text(
                               company.name.isNotEmpty ? company.name : "Nombre de tu Empresa",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F172A),
+                                color: primaryText,
                                 letterSpacing: 0.5,
                               ),
                             ),
@@ -257,10 +268,10 @@ class HomeScreen extends StatelessWidget {
                               company.isConfigured 
                                   ? "${company.email} | ${company.phone}" 
                                   : "Configura los datos de tu empresa en la pestaña Ajustes",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF6B7280),
+                                color: secondaryText,
                               ),
                             ),
                           ],
@@ -269,17 +280,17 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Divider(color: Color(0xFFE2E8F0), height: 1),
+                  Divider(color: colorScheme.outlineVariant, height: 1),
                   const SizedBox(height: 20),
 
                   // Missing Company Profile Banner
                   if (!company.isConfigured)
                     Card(
-                      color: const Color(0xFFFEF2F2),
+                      color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: const BorderSide(color: Color(0xFFFCA5A5), width: 1),
+                        side: BorderSide(color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5), width: 1),
                       ),
                       margin: const EdgeInsets.only(bottom: 20),
                       child: Padding(
@@ -292,20 +303,20 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
+                                  Text(
                                     "Faltan Datos de la Empresa",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF991B1B),
+                                      color: isDark ? const Color(0xFFFECACA) : const Color(0xFF991B1B),
                                       fontSize: 14,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     "Configura tu logo de negocio y contacto en Ajustes para incluirlos en los presupuestos generados.",
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF7F1D1D),
+                                      color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF7F1D1D),
                                     ),
                                   ),
                                 ],
@@ -321,6 +332,10 @@ class HomeScreen extends StatelessWidget {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: isDark ? Colors.white.withOpacity(0.24) : Colors.transparent,
+                        width: isDark ? 1.2 : 0,
+                      ),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Container(
@@ -420,11 +435,11 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // 4. Quick Actions with thin borders and soft opacity backgrounds
-                  const Text(
+                  Text(
                     "⚡ Acciones Rápidas",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: primaryText,
                       fontSize: 14,
                       letterSpacing: 0.5,
                     ),
@@ -500,11 +515,11 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         "Presupuestos Recientes",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
+                          color: primaryText,
                           fontSize: 14,
                           letterSpacing: 0.5,
                         ),
@@ -543,6 +558,7 @@ class HomeScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
                 child: _buildPremiumCard(
+                  context,
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
@@ -553,19 +569,19 @@ class HomeScreen extends StatelessWidget {
                           color: Color(0xFF2563EB),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           "Sin presupuestos todavía",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: Color(0xFF1F2937),
+                            color: primaryText,
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           "Crea tu primer presupuesto para comenzar.",
                           style: TextStyle(
-                            color: Color(0xFF6B7280),
+                            color: secondaryText,
                             fontSize: 13,
                           ),
                           textAlign: TextAlign.center,
@@ -607,6 +623,7 @@ class HomeScreen extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     child: _buildPremiumCard(
+                      context,
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         // Indicator dot of color
@@ -623,9 +640,9 @@ class HomeScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 quote.clientName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF111827),
+                                  color: primaryText,
                                   fontSize: 14,
                                 ),
                                 maxLines: 1,
@@ -635,10 +652,10 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               currencyFormat.format(quote.total),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF111827),
+                                color: primaryText,
                               ),
                             ),
                           ],
@@ -650,16 +667,16 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Text(
                                 "Presupuesto #${quote.number} (${quote.status})",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: secondaryText,
                                 ),
                               ),
                               Text(
                                 _getTimeElapsed(quote.date),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF9CA3AF),
+                                  color: mutedText,
                                 ),
                               ),
                             ],
@@ -698,18 +715,21 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultCompanyLogo() {
+  Widget _buildDefaultCompanyLogo(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
+        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.business_outlined,
-        color: Color(0xFF475569),
+        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
         size: 28,
       ),
     );
@@ -722,14 +742,17 @@ class HomeScreen extends StatelessWidget {
     required Color iconColor,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: theme.colorScheme.surface.withOpacity(isDark ? 0.95 : 0.85),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.8),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.02),
+            color: Colors.black.withOpacity(isDark ? 0.16 : 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -756,10 +779,10 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
+                    color: theme.colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -779,7 +802,13 @@ class HomeScreen extends StatelessWidget {
     required IconData icon,
     required Color iconColor,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
+    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
+
     return _buildPremiumCard(
+      context,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -790,9 +819,9 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF6B7280),
+                    color: secondaryText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -802,19 +831,19 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF111827),
+                color: theme.colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: Color(0xFF9CA3AF),
+                color: mutedText,
               ),
             ),
           ],
