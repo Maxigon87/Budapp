@@ -11,6 +11,8 @@ class ServicesScreen extends StatefulWidget {
 }
 
 class _ServicesScreenState extends State<ServicesScreen> {
+  static const String _addCategoryOption = '__add_category__';
+
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -20,62 +22,32 @@ class _ServicesScreenState extends State<ServicesScreen> {
     super.dispose();
   }
 
-  void _showAddEditDialog({ServiceItem? item}) {
-    final nameController = TextEditingController(text: item?.name ?? '');
-    // Format price to integer string for easier typing
-    final priceController = TextEditingController(
-      text: item != null ? item.price.toStringAsFixed(0) : '',
-    );
+  Future<String?> _showCreateCategoryDialog() async {
+    final categoryController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    final category = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
+          title: const Text('Nueva categoría'),
           content: Form(
             key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre del Servicio',
-                    hintText: 'Ej. Formateo PC + S.O.',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.handyman_outlined),
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa un nombre';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Precio sugerido (\$)',
-                    hintText: 'Ej. 15000',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa un precio';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'Ingresa un precio válido mayor a 0';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+            child: TextFormField(
+              controller: categoryController,
+              decoration: const InputDecoration(
+                labelText: 'Nombre de la categoría',
+                hintText: 'Ej. Soporte técnico',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.category_outlined),
+              ),
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Por favor ingresa una categoría';
+                }
+                return null;
+              },
             ),
           ),
           actions: [
@@ -86,28 +58,163 @@ class _ServicesScreenState extends State<ServicesScreen> {
             FilledButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  final provider = Provider.of<ServicesProvider>(context, listen: false);
-                  final name = nameController.text.trim();
-                  final price = double.parse(priceController.text);
-
-                  if (item == null) {
-                    provider.addService(name, price);
-                  } else {
-                    provider.updateService(item.id, name, price);
-                  }
-
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(item == null ? 'Servicio guardado' : 'Servicio actualizado'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  Navigator.pop(context, categoryController.text.trim());
                 }
               },
-              child: Text(item == null ? 'Guardar' : 'Actualizar'),
+              child: const Text('Agregar'),
             ),
           ],
+        );
+      },
+    );
+
+    categoryController.dispose();
+    return category;
+  }
+
+  void _showAddEditDialog({ServiceItem? item}) {
+    final provider = Provider.of<ServicesProvider>(context, listen: false);
+    final nameController = TextEditingController(text: item?.name ?? '');
+    // Format price to integer string for easier typing
+    final priceController = TextEditingController(
+      text: item != null ? item.price.toStringAsFixed(0) : '',
+    );
+    final formKey = GlobalKey<FormState>();
+    var selectedCategory = item?.category ?? ServiceItem.defaultCategory;
+    var availableCategories = <String>{...provider.categories, selectedCategory}.toList()
+      ..sort((a, b) {
+        if (a == ServiceItem.defaultCategory) return -1;
+        if (b == ServiceItem.defaultCategory) return 1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: selectedCategory,
+                        decoration: const InputDecoration(
+                          labelText: 'Categoría',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                        items: [
+                          ...availableCategories.map(
+                            (category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          ),
+                          const DropdownMenuItem(
+                            value: _addCategoryOption,
+                            child: Text('+ Agregar categoría'),
+                          ),
+                        ],
+                        onChanged: (value) async {
+                          if (value == null) return;
+                          if (value == _addCategoryOption) {
+                            final newCategory = await _showCreateCategoryDialog();
+                            if (newCategory == null || newCategory.isEmpty) return;
+                            setDialogState(() {
+                              selectedCategory = newCategory;
+                              availableCategories = <String>{...availableCategories, newCategory}.toList()
+                                ..sort((a, b) {
+                                  if (a == ServiceItem.defaultCategory) return -1;
+                                  if (b == ServiceItem.defaultCategory) return 1;
+                                  return a.toLowerCase().compareTo(b.toLowerCase());
+                                });
+                            });
+                            return;
+                          }
+                          setDialogState(() {
+                            selectedCategory = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre del Servicio',
+                          hintText: 'Ej. Formateo PC + S.O.',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.handyman_outlined),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Por favor ingresa un nombre';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: priceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Precio sugerido (\$)',
+                          hintText: 'Ej. 15000',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Por favor ingresa un precio';
+                          }
+                          final price = double.tryParse(value);
+                          if (price == null || price < 0) {
+                            return 'Ingresa un precio válido mayor a 0';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final provider = Provider.of<ServicesProvider>(context, listen: false);
+                      final name = nameController.text.trim();
+                      final price = double.parse(priceController.text);
+
+                      if (item == null) {
+                        provider.addService(name, price, selectedCategory);
+                      } else {
+                        provider.updateService(item.id, name, price, selectedCategory);
+                      }
+
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(item == null ? 'Servicio guardado' : 'Servicio actualizado'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(item == null ? 'Guardar' : 'Actualizar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -144,14 +251,25 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
+  Map<String, List<ServiceItem>> _groupServicesByCategory(List<ServiceItem> services) {
+    final groupedServices = <String, List<ServiceItem>>{};
+    for (final service in services) {
+      groupedServices.putIfAbsent(service.category, () => []).add(service);
+    }
+    return groupedServices;
+  }
+
   @override
   Widget build(BuildContext context) {
     final servicesProvider = Provider.of<ServicesProvider>(context);
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final normalizedQuery = _searchQuery.toLowerCase();
 
     final filteredServices = servicesProvider.services.where((service) {
-      return service.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return service.name.toLowerCase().contains(normalizedQuery) ||
+          service.category.toLowerCase().contains(normalizedQuery);
     }).toList();
+    final groupedServices = _groupServicesByCategory(filteredServices);
 
     return Scaffold(
       appBar: AppBar(
@@ -165,7 +283,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar servicio...',
+                hintText: 'Buscar servicio o categoría...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -213,7 +331,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         const SizedBox(height: 4),
                         if (_searchQuery.isEmpty)
                           Text(
-                            'Agrega servicios para autocompletar tus presupuestos',
+                            'Agrega servicios por categoría para autocompletar tus presupuestos',
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.outline,
@@ -222,73 +340,83 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       ],
                     ),
                   )
-                : ListView.builder(
-                    itemCount: filteredServices.length,
-                    itemBuilder: (context, index) {
-                      final item = filteredServices[index];
+                : ListView(
+                    children: groupedServices.entries.map((entry) {
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF2563EB).withOpacity(0.08),
-                            child: const Icon(
-                              Icons.handyman_outlined,
-                              color: Color(0xFF2563EB),
-                              size: 20,
-                            ),
-                          ),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: ExpansionTile(
+                          initiallyExpanded: true,
+                          leading: const Icon(Icons.category_outlined, color: Color(0xFF2563EB)),
                           title: Text(
-                            item.name,
+                            entry.key,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                currencyFormat.format(item.price),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF111827),
+                          subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
+                          children: entry.value.map((item) {
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF2563EB).withOpacity(0.08),
+                                child: const Icon(
+                                  Icons.handyman_outlined,
+                                  color: Color(0xFF2563EB),
+                                  size: 20,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'edit') {
-                                    _showAddEditDialog(item: item);
-                                  } else if (value == 'delete') {
-                                    _confirmDelete(item);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit, size: 18),
-                                        SizedBox(width: 8),
-                                        Text('Editar'),
-                                      ],
+                              title: Text(
+                                item.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(item.category),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    currencyFormat.format(item.price),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF111827),
                                     ),
                                   ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.delete, color: Colors.red, size: 18),
-                                        SizedBox(width: 8),
-                                        Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                      ],
-                                    ),
+                                  const SizedBox(width: 8),
+                                  PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      if (value == 'edit') {
+                                        _showAddEditDialog(item: item);
+                                      } else if (value == 'delete') {
+                                        _confirmDelete(item);
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit, size: 18),
+                                            SizedBox(width: 8),
+                                            Text('Editar'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete, color: Colors.red, size: 18),
+                                            SizedBox(width: 8),
+                                            Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                            );
+                          }).toList(),
                         ),
                       );
-                    },
+                    }).toList(),
                   ),
           ),
         ],

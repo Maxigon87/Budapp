@@ -6,14 +6,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 
 class ServiceItem {
+  static const String defaultCategory = 'Sin categoría';
+
   final String id;
   final String name;
   final double price;
+  final String category;
 
   ServiceItem({
     required this.id,
     required this.name,
     required this.price,
+    this.category = defaultCategory,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +25,7 @@ class ServiceItem {
       'id': id,
       'name': name,
       'price': price,
+      'category': category,
     };
   }
 
@@ -29,7 +34,13 @@ class ServiceItem {
       id: (map['id'] ?? '') as String,
       name: (map['name'] ?? '') as String,
       price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
+      category: _normalizeCategory(map['category']),
     );
+  }
+
+  static String _normalizeCategory(dynamic rawCategory) {
+    final category = rawCategory is String ? rawCategory.trim() : '';
+    return category.isEmpty ? defaultCategory : category;
   }
 }
 
@@ -48,14 +59,32 @@ class ServicesProvider extends ChangeNotifier {
         list.add(ServiceItem.fromMap(value));
       }
     }
-    // Sort services alphabetically by name
-    list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    // Sort services by category, then alphabetically by name
+    list.sort((a, b) {
+      final categoryComparison = a.category.toLowerCase().compareTo(b.category.toLowerCase());
+      if (categoryComparison != 0) return categoryComparison;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
     return list;
   }
 
-  Future<void> addService(String name, double price) async {
+  List<String> get categories {
+    final categorySet = <String>{ServiceItem.defaultCategory};
+    for (final service in services) {
+      categorySet.add(service.category);
+    }
+    final list = categorySet.toList()
+      ..sort((a, b) {
+        if (a == ServiceItem.defaultCategory) return -1;
+        if (b == ServiceItem.defaultCategory) return 1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
+    return list;
+  }
+
+  Future<void> addService(String name, double price, String category) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
-    final item = ServiceItem(id: id, name: name, price: price);
+    final item = ServiceItem(id: id, name: name, price: price, category: _normalizeCategory(category));
     await _box.put(id, item.toMap());
     notifyListeners();
 
@@ -63,13 +92,18 @@ class ServicesProvider extends ChangeNotifier {
     await _syncServiceToCloud(item);
   }
 
-  Future<void> updateService(String id, String name, double price) async {
-    final item = ServiceItem(id: id, name: name, price: price);
+  Future<void> updateService(String id, String name, double price, String category) async {
+    final item = ServiceItem(id: id, name: name, price: price, category: _normalizeCategory(category));
     await _box.put(id, item.toMap());
     notifyListeners();
 
     // Firebase Sync
     await _syncServiceToCloud(item);
+  }
+
+  String _normalizeCategory(String category) {
+    final trimmed = category.trim();
+    return trimmed.isEmpty ? ServiceItem.defaultCategory : trimmed;
   }
 
   Future<void> deleteService(String id) async {

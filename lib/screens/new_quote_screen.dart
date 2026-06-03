@@ -33,6 +33,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   // Add item form controllers
   final _serviceNameController = TextEditingController();
   final _servicePriceController = TextEditingController();
+  String _selectedServiceCategory = 'Todas';
 
   @override
   void initState() {
@@ -185,7 +186,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   @override
   Widget build(BuildContext context) {
     final company = Provider.of<CompanyProvider>(context);
-    final frequentServices = Provider.of<ServicesProvider>(context).services;
+    final servicesProvider = Provider.of<ServicesProvider>(context);
+    final frequentServices = servicesProvider.services;
+    final serviceCategories = ['Todas', ...servicesProvider.categories];
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -292,6 +295,29 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedServiceCategory,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría de servicios frecuentes',
+                        prefixIcon: Icon(Icons.category_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: serviceCategories
+                          .map(
+                            (category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedServiceCategory = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     // Autocomplete service name
                     Autocomplete<ServiceItem>(
                       optionsBuilder: (TextEditingValue textEditingValue) {
@@ -299,15 +325,45 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           return const Iterable<ServiceItem>.empty();
                         }
                         return frequentServices.where((option) {
-                          return option.name
+                          final matchesCategory = _selectedServiceCategory == 'Todas' ||
+                              option.category == _selectedServiceCategory;
+                          final matchesName = option.name
                               .toLowerCase()
                               .contains(textEditingValue.text.toLowerCase());
+                          return matchesCategory && matchesName;
                         });
                       },
                       displayStringForOption: (option) => option.name,
                       onSelected: (option) {
                         _serviceNameController.text = option.name;
                         _servicePriceController.text = option.price.toStringAsFixed(0);
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final option = options.elementAt(index);
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(option.name),
+                                    subtitle: Text(option.category),
+                                    trailing: Text(currencyFormat.format(option.price)),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
                       },
                       fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
                         // Link our custom controller to autocomplete
