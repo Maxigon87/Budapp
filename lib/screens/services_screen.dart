@@ -117,13 +117,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: errors.take(8).map((error) => Padding(
+                children: errors.take(8).map<Widget>((error) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text('• $error'),
                 )).toList()
                   ..addAll(
                     errors.length > 8
-                        ? [Text('Y ${errors.length - 8} error${errors.length - 8 == 1 ? '' : 'es'} más.')]
+                        ? [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, bottom: 8),
+                              child: Text(
+                                'Y ${errors.length - 8} error${errors.length - 8 == 1 ? '' : 'es'} más.',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          ]
                         : const [],
                   ),
               ),
