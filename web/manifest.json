@@ -1,6 +1,6 @@
 {
-    "name": "mgz",
-    "short_name": "mgz",
+    "name": "Budapp",
+    "short_name": "Budapp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

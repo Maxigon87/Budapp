@@ -1,4 +1,4 @@
-# mgz
+# Budapp
 
 A new Flutter project.
 

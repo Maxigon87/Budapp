@@ -155,7 +155,7 @@ class HomeScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.asset(
-                    'assets/images/mgz-logo.png',
+                    'assets/images/budapp-logo.png',
                     width: 28,
                     height: 28,
                     fit: BoxFit.cover,
@@ -168,7 +168,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "MGZ App",
+                  "Budapp",
                   style: TextStyle(
                     color: primaryText,
                     fontWeight: FontWeight.w900,

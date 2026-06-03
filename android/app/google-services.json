@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "562409321853",
-    "project_id": "mgz-app-98294",
-    "storage_bucket": "mgz-app-98294.firebasestorage.app"
+    "project_id": "budapp-98294",
+    "storage_bucket": "budapp-98294.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:562409321853:android:fbeb58efb907a2c5108814",
         "android_client_info": {
-          "package_name": "com.example.mgz"
+          "package_name": "com.example.budapp"
         }
       },
       "oauth_client": [],
