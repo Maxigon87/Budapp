@@ -8,7 +8,7 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
-import 'package:mgz/main.dart';
+import 'package:budapp/main.dart';
 
 void main() {
   setUp(() async {

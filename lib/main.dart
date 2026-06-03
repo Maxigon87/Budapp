@@ -31,8 +31,8 @@ void main() async {
           apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY",
           appId: "1:562409321853:android:fbeb58efb907a2c5108814",
           messagingSenderId: "562409321853",
-          projectId: "mgz-app-98294",
-          storageBucket: "mgz-app-98294.firebasestorage.app",
+          projectId: "budapp-98294",
+          storageBucket: "budapp-98294.firebasestorage.app",
         ),
       );
     } else {
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
-        title: 'Generador de Presupuestos',
+        title: 'Budapp',
         debugShowCheckedModeBanner: false,
         
         // Theme settings

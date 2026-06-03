@@ -1,4 +1,4 @@
-package com.example.mgz
+package com.example.budapp
 
 import io.flutter.embedding.android.FlutterActivity
 
