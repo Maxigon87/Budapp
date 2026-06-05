@@ -200,7 +200,6 @@ class ServicesProvider extends ChangeNotifier {
           .collection('services')
           .get();
 
-      await _box.clear();
       for (var doc in snapshot.docs) {
         final data = doc.data();
         await _box.put(doc.id, data);
@@ -208,6 +207,7 @@ class ServicesProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       developer.log("Failed to download services from cloud: $e");
+      rethrow;
     }
   }
 
@@ -221,18 +221,27 @@ class ServicesProvider extends ChangeNotifier {
     if (user == null) return;
 
     try {
-      final batch = firestore.batch();
-      for (var item in services) {
-        final docRef = firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('services')
-            .doc(item.id);
-        batch.set(docRef, item.toMap());
+      final allServices = services;
+      const int batchSize = 500; // Firestore limit per batch is 500
+
+      for (var i = 0; i < allServices.length; i += batchSize) {
+        final batch = firestore.batch();
+        final end = (i + batchSize < allServices.length) ? i + batchSize : allServices.length;
+        final chunk = allServices.sublist(i, end);
+
+        for (var item in chunk) {
+          final docRef = firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('services')
+              .doc(item.id);
+          batch.set(docRef, item.toMap());
+        }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (e) {
       developer.log("Failed to upload services to cloud: $e");
+      rethrow;
     }
   }
 }

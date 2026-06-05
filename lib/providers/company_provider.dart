@@ -256,11 +256,37 @@ class CompanyProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint("Failed to download company settings from cloud: $e");
+      rethrow;
     }
   }
 
   // Push company settings to Firestore
   Future<void> uploadToCloud() async {
-    await _syncCompanyToCloud();
+    final auth = _auth;
+    final firestore = _firestore;
+    if (auth == null || firestore == null) return;
+
+    final user = auth.currentUser;
+    if (user != null) {
+      try {
+        final logoBase64 = _box.get('logoBase64') as String?;
+        await firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('company')
+            .doc('settings')
+            .set({
+              'name': name,
+              'address': address,
+              'phone': phone,
+              'email': email,
+              'website': website,
+              'logoBase64': logoBase64,
+            });
+      } catch (e) {
+        debugPrint("Failed to sync company settings to Firestore: $e");
+        rethrow;
+      }
+    }
   }
 }
