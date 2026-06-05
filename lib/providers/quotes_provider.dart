@@ -212,7 +212,6 @@ class QuotesProvider extends ChangeNotifier {
           .collection('quotes')
           .get();
 
-      await _box.clear();
       for (var doc in snapshot.docs) {
         final data = doc.data();
         await _box.put(doc.id, data);
@@ -220,6 +219,7 @@ class QuotesProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       developer.log("Failed to download quotes from cloud: $e");
+      rethrow;
     }
   }
 
@@ -233,18 +233,27 @@ class QuotesProvider extends ChangeNotifier {
     if (user == null) return;
 
     try {
-      final batch = firestore.batch();
-      for (var quote in quotes) {
-        final docRef = firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('quotes')
-            .doc(quote.id);
-        batch.set(docRef, quote.toMap());
+      final allQuotes = quotes;
+      const int batchSize = 500; // Firestore limit per batch is 500
+
+      for (var i = 0; i < allQuotes.length; i += batchSize) {
+        final batch = firestore.batch();
+        final end = (i + batchSize < allQuotes.length) ? i + batchSize : allQuotes.length;
+        final chunk = allQuotes.sublist(i, end);
+
+        for (var quote in chunk) {
+          final docRef = firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('quotes')
+              .doc(quote.id);
+          batch.set(docRef, quote.toMap());
+        }
+        await batch.commit();
       }
-      await batch.commit();
     } catch (e) {
       developer.log("Failed to upload quotes to cloud: $e");
+      rethrow;
     }
   }
 }

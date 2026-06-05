@@ -25,19 +25,15 @@ void main() async {
 
   // Try initializing Firebase
   try {
-    if (kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY",
-          appId: "1:562409321853:android:fbeb58efb907a2c5108814",
-          messagingSenderId: "562409321853",
-          projectId: "budapp-98294",
-          storageBucket: "budapp-98294.firebasestorage.app",
-        ),
-      );
-    } else {
-      await Firebase.initializeApp();
-    }
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY",
+        appId: "1:562409321853:android:fbeb58efb907a2c5108814",
+        messagingSenderId: "562409321853",
+        projectId: "budapp-98294",
+        storageBucket: "budapp-98294.firebasestorage.app",
+      ),
+    );
   } catch (e) {
     debugPrint("Firebase not configured or initialized: $e");
     debugPrint("Running in Local Offline Mode.");
