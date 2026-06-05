@@ -115,9 +115,8 @@ class ServicesProvider extends ChangeNotifier {
 
     notifyListeners();
 
-    for (final item in importedItems) {
-      await _syncServiceToCloud(item);
-    }
+    // Firebase Sync in parallel
+    await Future.wait(importedItems.map((item) => _syncServiceToCloud(item)));
 
     return importedItems.length;
   }
@@ -201,6 +200,7 @@ class ServicesProvider extends ChangeNotifier {
           .collection('services')
           .get();
 
+      await _box.clear();
       for (var doc in snapshot.docs) {
         final data = doc.data();
         await _box.put(doc.id, data);

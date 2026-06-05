@@ -10,6 +10,10 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   AuthProvider() {
+    final auth = _auth;
+    if (auth != null) {
+      _user = auth.currentUser;
+    }
     _initListener();
   }
 

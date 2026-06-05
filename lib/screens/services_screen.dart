@@ -252,19 +252,22 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             child: Text('+ Agregar categoría'),
                           ),
                         ],
-                        onChanged: (value) async {
+                        onChanged: (value) {
                           if (value == null) return;
                           if (value == _addCategoryOption) {
-                            final newCategory = await _showCreateCategoryDialog();
-                            if (newCategory == null || newCategory.isEmpty) return;
-                            setDialogState(() {
-                              selectedCategory = newCategory;
-                              availableCategories = <String>{...availableCategories, newCategory}.toList()
-                                ..sort((a, b) {
-                                  if (a == ServiceItem.defaultCategory) return -1;
-                                  if (b == ServiceItem.defaultCategory) return 1;
-                                  return a.toLowerCase().compareTo(b.toLowerCase());
-                                });
+                            Future.delayed(const Duration(milliseconds: 300), () async {
+                              if (!mounted) return;
+                              final newCategory = await _showCreateCategoryDialog();
+                              if (newCategory == null || newCategory.isEmpty) return;
+                              setDialogState(() {
+                                selectedCategory = newCategory;
+                                availableCategories = <String>{...availableCategories, newCategory}.toList()
+                                  ..sort((a, b) {
+                                    if (a == ServiceItem.defaultCategory) return -1;
+                                    if (b == ServiceItem.defaultCategory) return 1;
+                                    return a.toLowerCase().compareTo(b.toLowerCase());
+                                  });
+                              });
                             });
                             return;
                           }

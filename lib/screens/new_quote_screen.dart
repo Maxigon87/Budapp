@@ -335,8 +335,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       },
                       displayStringForOption: (option) => option.name,
                       onSelected: (option) {
-                        _serviceNameController.text = option.name;
-                        _servicePriceController.text = option.price.toStringAsFixed(0);
+                        setState(() {
+                          _serviceNameController.text = option.name;
+                          _servicePriceController.text = option.price.toStringAsFixed(0);
+                          _selectedServiceCategory = option.category;
+                        });
                       },
                       optionsViewBuilder: (context, onSelected, options) {
                         return Align(

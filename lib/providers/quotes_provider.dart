@@ -212,6 +212,7 @@ class QuotesProvider extends ChangeNotifier {
           .collection('quotes')
           .get();
 
+      await _box.clear();
       for (var doc in snapshot.docs) {
         final data = doc.data();
         await _box.put(doc.id, data);

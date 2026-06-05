@@ -75,22 +75,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _saveCompanyInfo() {
+  void _showSaveSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Color(0xFF16A34A), size: 28),
+              SizedBox(width: 12),
+              Text('¡Guardado con éxito!', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: const Text(
+            'Los datos del perfil de tu empresa y el logo han sido guardados localmente y sincronizados en la nube correctamente.',
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _saveCompanyInfo() async {
     if (_formKey.currentState!.validate()) {
-      Provider.of<CompanyProvider>(context, listen: false).updateCompanyInfo(
-        name: _nameController.text.trim(),
-        address: _addressController.text.trim(),
-        phone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        website: _websiteController.text.trim(),
-        logoPath: _logoPath,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Datos de la empresa guardados correctamente'),
-          behavior: SnackBarBehavior.floating,
+      // Show loading dialog to block input during sync
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text("Guardando y sincronizando datos..."),
+            ],
+          ),
         ),
       );
+
+      try {
+        await Provider.of<CompanyProvider>(context, listen: false).updateCompanyInfo(
+          name: _nameController.text.trim(),
+          address: _addressController.text.trim(),
+          phone: _phoneController.text.trim(),
+          email: _emailController.text.trim(),
+          website: _websiteController.text.trim(),
+          logoPath: _logoPath,
+        );
+
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          _showSaveSuccessDialog(); // Show success modal dialog
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al guardar datos: $e'),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
