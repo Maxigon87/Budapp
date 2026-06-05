@@ -13,8 +13,6 @@ class ServicesScreen extends StatefulWidget {
 }
 
 class _ServicesScreenState extends State<ServicesScreen> {
-  static const String _addCategoryOption = '__add_category__';
-
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -154,204 +152,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
     super.dispose();
   }
 
-  Future<String?> _showCreateCategoryDialog() async {
-    final categoryController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final category = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Nueva categoría'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: categoryController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre de la categoría',
-                hintText: 'Ej. Soporte técnico',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.category_outlined),
-              ),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Por favor ingresa una categoría';
-                }
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  Navigator.pop(context, categoryController.text.trim());
-                }
-              },
-              child: const Text('Agregar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    categoryController.dispose();
-    return category;
-  }
-
   void _showAddEditDialog({ServiceItem? item}) {
-    final provider = Provider.of<ServicesProvider>(context, listen: false);
-    final nameController = TextEditingController(text: item?.name ?? '');
-    // Format price to integer string for easier typing
-    final priceController = TextEditingController(
-      text: item != null ? item.price.toStringAsFixed(0) : '',
-    );
-    final formKey = GlobalKey<FormState>();
-    var selectedCategory = item?.category ?? ServiceItem.defaultCategory;
-    var availableCategories = <String>{...provider.categories, selectedCategory}.toList()
-      ..sort((a, b) {
-        if (a == ServiceItem.defaultCategory) return -1;
-        if (b == ServiceItem.defaultCategory) return 1;
-        return a.toLowerCase().compareTo(b.toLowerCase());
-      });
-
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoría',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.category_outlined),
-                        ),
-                        items: [
-                          ...availableCategories.map(
-                            (category) => DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            ),
-                          ),
-                          const DropdownMenuItem(
-                            value: _addCategoryOption,
-                            child: Text('+ Agregar categoría'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          if (value == _addCategoryOption) {
-                            Future.delayed(const Duration(milliseconds: 300), () async {
-                              if (!mounted) return;
-                              final newCategory = await _showCreateCategoryDialog();
-                              if (newCategory == null || newCategory.isEmpty) return;
-                              setDialogState(() {
-                                selectedCategory = newCategory;
-                                availableCategories = <String>{...availableCategories, newCategory}.toList()
-                                  ..sort((a, b) {
-                                    if (a == ServiceItem.defaultCategory) return -1;
-                                    if (b == ServiceItem.defaultCategory) return 1;
-                                    return a.toLowerCase().compareTo(b.toLowerCase());
-                                  });
-                              });
-                            });
-                            return;
-                          }
-                          setDialogState(() {
-                            selectedCategory = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre del Servicio',
-                          hintText: 'Ej. Formateo PC + S.O.',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.handyman_outlined),
-                        ),
-                        textCapitalization: TextCapitalization.sentences,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor ingresa un nombre';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: priceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio sugerido (\$)',
-                          hintText: 'Ej. 15000',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.attach_money),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Por favor ingresa un precio';
-                          }
-                          final price = double.tryParse(value);
-                          if (price == null || price < 0) {
-                            return 'Ingresa un precio válido mayor a 0';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      final provider = Provider.of<ServicesProvider>(context, listen: false);
-                      final name = nameController.text.trim();
-                      final price = double.parse(priceController.text);
-
-                      if (item == null) {
-                        provider.addService(name, price, selectedCategory);
-                      } else {
-                        provider.updateService(item.id, name, price, selectedCategory);
-                      }
-
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(item == null ? 'Servicio guardado' : 'Servicio actualizado'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  child: Text(item == null ? 'Guardar' : 'Actualizar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (context) => _AddEditServiceDialog(item: item),
     );
   }
 
@@ -586,3 +390,243 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 }
+
+class _CreateCategoryDialog extends StatefulWidget {
+  const _CreateCategoryDialog();
+
+  @override
+  State<_CreateCategoryDialog> createState() => _CreateCategoryDialogState();
+}
+
+class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
+  final _categoryController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _categoryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Nueva categoría'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _categoryController,
+          decoration: const InputDecoration(
+            labelText: 'Nombre de la categoría',
+            hintText: 'Ej. Soporte técnico',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.category_outlined),
+          ),
+          textCapitalization: TextCapitalization.words,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Por favor ingresa una categoría';
+            }
+            return null;
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(context, _categoryController.text.trim());
+            }
+          },
+          child: const Text('Agregar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddEditServiceDialog extends StatefulWidget {
+  final ServiceItem? item;
+
+  const _AddEditServiceDialog({super.key, this.item});
+
+  @override
+  State<_AddEditServiceDialog> createState() => _AddEditServiceDialogState();
+}
+
+class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _priceController;
+  final _formKey = GlobalKey<FormState>();
+  late String _selectedCategory;
+  late List<String> _availableCategories;
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = Provider.of<ServicesProvider>(context, listen: false);
+    _nameController = TextEditingController(text: widget.item?.name ?? '');
+    _priceController = TextEditingController(
+      text: widget.item != null ? widget.item!.price.toStringAsFixed(0) : '',
+    );
+    _selectedCategory = widget.item?.category ?? ServiceItem.defaultCategory;
+    _availableCategories = <String>{...provider.categories, _selectedCategory}.toList()
+      ..sort((a, b) {
+        if (a == ServiceItem.defaultCategory) return -1;
+        if (b == ServiceItem.defaultCategory) return 1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<String?> _showCreateCategoryDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => const _CreateCategoryDialog(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.category_outlined),
+                      ),
+                      items: _availableCategories.map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ),
+                      ).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, size: 28, color: Color(0xFF2563EB)),
+                    tooltip: 'Nueva categoría',
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    constraints: const BoxConstraints(),
+                    onPressed: () async {
+                      final newCategory = await _showCreateCategoryDialog();
+                      if (newCategory == null || newCategory.isEmpty) return;
+                      setState(() {
+                        _selectedCategory = newCategory;
+                        _availableCategories = <String>{..._availableCategories, newCategory}.toList()
+                          ..sort((a, b) {
+                            if (a == ServiceItem.defaultCategory) return -1;
+                            if (b == ServiceItem.defaultCategory) return 1;
+                            return a.toLowerCase().compareTo(b.toLowerCase());
+                          });
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre del Servicio',
+                  hintText: 'Ej. Formateo PC + S.O.',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.handyman_outlined),
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Por favor ingresa un nombre';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(
+                  labelText: 'Precio sugerido (\$)',
+                  hintText: 'Ej. 15000',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.attach_money),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Por favor ingresa un precio';
+                  }
+                  final price = double.tryParse(value);
+                  if (price == null || price < 0) {
+                    return 'Ingresa un precio válido mayor a 0';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              final provider = Provider.of<ServicesProvider>(context, listen: false);
+              final name = _nameController.text.trim();
+              final price = double.parse(_priceController.text);
+
+              if (widget.item == null) {
+                provider.addService(name, price, _selectedCategory);
+              } else {
+                provider.updateService(widget.item!.id, name, price, _selectedCategory);
+              }
+
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(widget.item == null ? 'Servicio guardado' : 'Servicio actualizado'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          child: Text(widget.item == null ? 'Guardar' : 'Actualizar'),
+        ),
+      ],
+    );
+  }
+}
+
