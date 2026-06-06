@@ -6,6 +6,7 @@ import '../providers/services_provider.dart';
 import '../providers/company_provider.dart';
 import '../utils/pdf_generator.dart';
 import 'package:printing/printing.dart';
+import '../providers/theme_provider.dart';
 
 class NewQuoteScreen extends StatefulWidget {
   const NewQuoteScreen({super.key});
@@ -256,6 +257,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   Widget build(BuildContext context) {
     final company = Provider.of<CompanyProvider>(context);
     final servicesProvider = Provider.of<ServicesProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final accentColor = themeProvider.lightAccent;
     final frequentServices = servicesProvider.services;
     final serviceCategories = ['Todas', ...servicesProvider.categories];
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
@@ -477,7 +480,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           label: const Text('Añadir'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                            backgroundColor: const Color(0xFF2563EB),
+                            backgroundColor: accentColor,
                           ),
                         ),
                       ],

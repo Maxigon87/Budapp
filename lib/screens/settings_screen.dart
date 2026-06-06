@@ -6,6 +6,8 @@ import '../providers/company_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/quotes_provider.dart';
+import '../providers/theme_provider.dart';
+import 'backup_restore_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -318,6 +320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final companyProvider = Provider.of<CompanyProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
       body: ListView(
@@ -602,6 +605,136 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                   ],
+                ],
+              ),
+            ),
+          ),
+          // Section 3: Offline Local Backup
+          const SizedBox(height: 16),
+          Card(
+            elevation: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Copia de Seguridad Offline (Local)',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) de forma local sin usar internet.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                  const Divider(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BackupRestoreScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.sd_storage_outlined),
+                      label: const Text('Gestionar Copias Locales'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Section 4: Color customization
+          Card(
+            elevation: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Aspecto y Personalización',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Elige el color principal de la aplicación para adaptarlo a la identidad de tu empresa.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                  const Divider(height: 24),
+                  
+                  // Horizontal color list picker
+                  SizedBox(
+                    height: 56,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: ThemeProvider.themeColors.length,
+                      itemBuilder: (context, index) {
+                        final themeColor = ThemeProvider.themeColors[index];
+                        final isSelected = themeProvider.colorIndex == index;
+                        final colorAccentColor = themeColor.lightColor;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                          child: InkWell(
+                            onTap: () {
+                              themeProvider.setColorIndex(index);
+                            },
+                            borderRadius: BorderRadius.circular(28),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: colorAccentColor.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isSelected ? colorAccentColor : Theme.of(context).colorScheme.outlineVariant,
+                                  width: isSelected ? 3.0 : 1.5,
+                                ),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: colorAccentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 14,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      'Color seleccionado: ${themeProvider.currentThemeColor.name}',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
                 ],
               ),
             ),

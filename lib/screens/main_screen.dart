@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../providers/company_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/quotes_provider.dart';
+import '../providers/theme_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -103,6 +104,9 @@ class MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final accentColor = themeProvider.lightAccent;
+
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
@@ -147,7 +151,7 @@ class MainScreenState extends State<MainScreen> {
                 'Nuevo Presupuesto',
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
               ),
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: accentColor,
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             )

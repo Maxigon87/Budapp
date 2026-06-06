@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/services_provider.dart';
 import '../utils/services_excel_importer.dart';
+import 'dart:io';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import '../providers/theme_provider.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -36,27 +40,59 @@ class _ServicesScreenState extends State<ServicesScreen> {
         )
         .toList();
     final bytes = ServicesExcelImporter.buildTemplate(rows: rows);
-    final saveLocation = await getSaveLocation(
-      acceptedTypeGroups: const [_excelTypeGroup],
-      suggestedName: 'base_servicios.xlsx',
-    );
 
-    if (saveLocation == null) return;
+    if (Platform.isAndroid || Platform.isIOS) {
+      try {
+        final directory = await getTemporaryDirectory();
+        final tempFilePath = '${directory.path}/base_servicios.xlsx';
+        final file = File(tempFilePath);
+        await file.writeAsBytes(bytes);
 
-    final file = XFile.fromData(
-      bytes,
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      name: 'base_servicios.xlsx',
-    );
-    await file.saveTo(saveLocation.path);
+        await Share.shareXFiles(
+          [XFile(tempFilePath)],
+          subject: 'Base de Servicios - Budapp',
+        );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Archivo de servicios descargado'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Compartiendo base de servicios...'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar base: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      final saveLocation = await getSaveLocation(
+        acceptedTypeGroups: const [_excelTypeGroup],
+        suggestedName: 'base_servicios.xlsx',
+      );
+
+      if (saveLocation == null) return;
+
+      final file = XFile.fromData(
+        bytes,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        name: 'base_servicios.xlsx',
+      );
+      await file.saveTo(saveLocation.path);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Archivo de servicios descargado'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _importServicesFromExcel() async {
@@ -201,6 +237,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   @override
   Widget build(BuildContext context) {
     final servicesProvider = Provider.of<ServicesProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final accentColor = themeProvider.lightAccent;
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final normalizedQuery = _searchQuery.toLowerCase();
 
@@ -303,7 +341,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: ExpansionTile(
                           initiallyExpanded: true,
-                          leading: const Icon(Icons.category_outlined, color: Color(0xFF2563EB)),
+                          leading: Icon(Icons.category_outlined, color: accentColor),
                           title: Text(
                             entry.key,
                             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -312,10 +350,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           children: entry.value.map((item) {
                             return ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: const Color(0xFF2563EB).withOpacity(0.08),
-                                child: const Icon(
+                                backgroundColor: accentColor.withOpacity(0.08),
+                                child: Icon(
                                   Icons.handyman_outlined,
-                                  color: Color(0xFF2563EB),
+                                  color: accentColor,
                                   size: 20,
                                 ),
                               ),
@@ -381,7 +419,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         tooltip: 'Guardar Servicio',
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: accentColor,
         foregroundColor: Colors.white,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -498,6 +536,9 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final accentColor = themeProvider.lightAccent;
+
     return AlertDialog(
       title: Text(widget.item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
       content: Form(
@@ -534,7 +575,7 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 28, color: Color(0xFF2563EB)),
+                    icon: Icon(Icons.add_circle_outline, size: 28, color: accentColor),
                     tooltip: 'Nueva categoría',
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     constraints: const BoxConstraints(),

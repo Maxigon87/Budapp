@@ -256,4 +256,8 @@ class QuotesProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  void refresh() {
+    notifyListeners();
+  }
 }

@@ -244,4 +244,8 @@ class ServicesProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  void refresh() {
+    notifyListeners();
+  }
 }

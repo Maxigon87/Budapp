@@ -91,6 +91,10 @@ class CompanyProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> refresh() async {
+    await _initLogoPath();
+  }
+
   bool get isConfigured {
     return name.isNotEmpty && phone.isNotEmpty && email.isNotEmpty;
   }
@@ -178,7 +182,7 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        // final logoBase64 = _box.get('logoBase64') as String?; // Commented out for testing
+        final logoBase64 = _box.get('logoBase64') as String?;
         await firestore
             .collection('users')
             .doc(user.uid)
@@ -190,7 +194,7 @@ class CompanyProvider extends ChangeNotifier {
               'phone': phone,
               'email': email,
               'website': website,
-              // 'logoBase64': logoBase64, // Commented out for testing
+              'logoBase64': logoBase64,
             });
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");
@@ -269,7 +273,7 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        // final logoBase64 = _box.get('logoBase64') as String?; // Commented out for testing
+        final logoBase64 = _box.get('logoBase64') as String?;
         await firestore
             .collection('users')
             .doc(user.uid)
@@ -281,7 +285,7 @@ class CompanyProvider extends ChangeNotifier {
               'phone': phone,
               'email': email,
               'website': website,
-              // 'logoBase64': logoBase64, // Commented out for testing
+              'logoBase64': logoBase64,
             });
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");

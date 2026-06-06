@@ -9,6 +9,7 @@ import 'new_quote_screen.dart';
 import 'main_screen.dart';
 import '../utils/pdf_generator.dart';
 import 'package:printing/printing.dart';
+import '../providers/theme_provider.dart';
 
 // 1. Premium Glowing Custom Painter for the Income Card Background
 class IncomeChartPainter extends CustomPainter {
@@ -118,6 +119,8 @@ class HomeScreen extends StatelessWidget {
     final company = Provider.of<CompanyProvider>(context);
     final quotesProvider = Provider.of<QuotesProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final accentColor = themeProvider.lightAccent;
 
     final allQuotes = quotesProvider.quotes;
     final recentQuotes = allQuotes.take(5).toList();
@@ -417,7 +420,7 @@ class HomeScreen extends StatelessWidget {
                           value: totalQuotesCount.toString(),
                           subtitle: "Presupuestos totales",
                           icon: Icons.description_outlined,
-                          iconColor: const Color(0xFF2563EB), // Blue
+                          iconColor: accentColor,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -454,7 +457,7 @@ class HomeScreen extends StatelessWidget {
                           context,
                           label: "Nuevo",
                           icon: Icons.add_circle_outline,
-                          iconColor: const Color(0xFF2563EB),
+                          iconColor: accentColor,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -542,7 +545,7 @@ class HomeScreen extends StatelessWidget {
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          backgroundColor: const Color(0xFF1E3A8A), // New sophisticated main palette color
+                          backgroundColor: accentColor,
                           elevation: 0,
                         ),
                       ),
@@ -565,10 +568,10 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.receipt_long_outlined,
                           size: 48,
-                          color: Color(0xFF2563EB),
+                          color: accentColor,
                         ),
                         const SizedBox(height: 12),
                         Text(
