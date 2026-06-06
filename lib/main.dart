@@ -25,15 +25,23 @@ void main() async {
 
   // Try initializing Firebase
   try {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY",
-        appId: "1:562409321853:android:fbeb58efb907a2c5108814",
+    FirebaseOptions firebaseOptions;
+    if (kIsWeb || Platform.isWindows) {
+      // CONFIGURACIÓN DE FIREBASE PARA WINDOWS / WEB
+      // IMPORTANTE: Para Windows/Web se debe registrar una "Web App" en la consola de Firebase.
+      // Reemplaza 'YOUR_WEB_APP_ID' con el appId de la Web App registrada.
+      firebaseOptions = const FirebaseOptions(
+        apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY", 
+        appId: "YOUR_WEB_APP_ID", // TODO: Cambiar por el ID de la App Web
         messagingSenderId: "562409321853",
         projectId: "budapp-98294",
         storageBucket: "budapp-98294.firebasestorage.app",
-      ),
-    );
+      );
+    } else {
+      // CONFIGURACIÓN DE FIREBASE PARA ANDROID / IOS
+      // Lee automáticamente del archivo google-services.json o GoogleService-Info.plist
+      await Firebase.initializeApp();
+    }
   } catch (e) {
     debugPrint("Firebase not configured or initialized: $e");
     debugPrint("Running in Local Offline Mode.");

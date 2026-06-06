@@ -34,6 +34,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   final _serviceNameController = TextEditingController();
   final _servicePriceController = TextEditingController();
   String _selectedServiceCategory = 'Todas';
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -152,6 +153,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   }
 
   Future<Quote?> _saveQuoteToDb() async {
+    if (_isSaving) return null;
+
     if (!_formKey.currentState!.validate()) {
       return null;
     }
@@ -166,21 +169,87 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
       return null;
     }
 
-    final newQuote = Quote(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      number: _quoteNumber,
-      date: _quoteDate,
-      clientName: _clientNameController.text.trim(),
-      clientPhone: _clientPhoneController.text.trim(),
-      clientAddress: _clientAddressController.text.trim(),
-      items: List.from(_quoteItems),
-      total: _totalAmount,
-      status: 'Pendiente',
-      observations: _observationsController.text.trim(),
-    );
+    setState(() {
+      _isSaving = true;
+    });
 
-    await Provider.of<QuotesProvider>(context, listen: false).saveQuote(newQuote);
-    return newQuote;
+    try {
+      final newQuote = Quote(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        number: _quoteNumber,
+        date: _quoteDate,
+        clientName: _clientNameController.text.trim(),
+        clientPhone: _clientPhoneController.text.trim(),
+        clientAddress: _clientAddressController.text.trim(),
+        items: List.from(_quoteItems),
+        total: _totalAmount,
+        status: 'Pendiente',
+        observations: _observationsController.text.trim(),
+      );
+
+      await Provider.of<QuotesProvider>(context, listen: false).saveQuote(newQuote);
+      return newQuote;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar presupuesto: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return null;
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  void _clearFields() {
+    _clientNameController.clear();
+    _clientPhoneController.clear();
+    _clientAddressController.clear();
+    _observationsController.clear();
+    _serviceNameController.clear();
+    _servicePriceController.clear();
+    setState(() {
+      _quoteItems.clear();
+      _selectedServiceCategory = 'Todas';
+    });
+  }
+
+  Future<void> _showSuccessDialog(String message) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Color(0xFF16A34A), size: 28),
+              SizedBox(width: 12),
+              Text('¡Guardado!', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(fontSize: 14),
+          ),
+          actions: <Widget>[
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -516,55 +585,74 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () async {
-                      final quote = await _saveQuoteToDb();
-                      if (quote != null && mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Presupuesto guardado en el historial'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _isSaving
+                        ? null
+                        : () async {
+                            final quote = await _saveQuoteToDb();
+                            if (quote != null && mounted) {
+                              _clearFields();
+                              await _showSuccessDialog(
+                                'Presupuesto N° ${quote.number} guardado en el historial con éxito.',
+                              );
+                              if (mounted) {
+                                Navigator.pop(context);
+                              }
+                            }
+                          },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Guardar Historial'),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Guardar Historial'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () async {
-                      final quote = await _saveQuoteToDb();
-                      if (quote != null && mounted) {
-                        // Generate PDF Bytes
-                        final pdfBytes = await PdfGenerator.generateQuotePdf(
-                          company: company,
-                          quote: quote,
-                        );
-                        // Trigger Share Sheet
-                        await Printing.sharePdf(
-                          bytes: pdfBytes,
-                          filename: 'presupuesto_${quote.number}.pdf',
-                        );
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Presupuesto guardado y compartido'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onPressed: _isSaving
+                        ? null
+                        : () async {
+                            final quote = await _saveQuoteToDb();
+                            if (quote != null && mounted) {
+                              // Generate PDF Bytes
+                              final pdfBytes = await PdfGenerator.generateQuotePdf(
+                                company: company,
+                                quote: quote,
+                              );
+                              // Trigger Share Sheet
+                              await Printing.sharePdf(
+                                bytes: pdfBytes,
+                                filename: 'presupuesto_${quote.number}.pdf',
+                              );
+                              if (mounted) {
+                                _clearFields();
+                                await _showSuccessDialog(
+                                  'Presupuesto N° ${quote.number} guardado y listo para compartir.',
+                                );
+                                if (mounted) {
+                                  Navigator.pop(context);
+                                }
+                              }
+                            }
+                          },
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Guardar y Compartir'),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Guardar y Compartir'),
                   ),
                 ),
               ],

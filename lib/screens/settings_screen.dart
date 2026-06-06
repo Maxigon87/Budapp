@@ -226,14 +226,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       if (upload) {
-        await companyProvider.uploadToCloud();
-        await servicesProvider.uploadToCloud();
-        await quotesProvider.uploadToCloud();
+        debugPrint("Starting upload: Company Settings...");
+        await companyProvider.uploadToCloud().timeout(const Duration(seconds: 10));
+        
+        debugPrint("Starting upload: Services...");
+        await servicesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
+        
+        debugPrint("Starting upload: Quotes...");
+        await quotesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
       } else {
-        await companyProvider.syncFromCloud();
-        await servicesProvider.syncFromCloud();
-        await quotesProvider.syncFromCloud();
+        debugPrint("Starting download: Company Settings...");
+        await companyProvider.syncFromCloud().timeout(const Duration(seconds: 10));
+        
+        debugPrint("Starting download: Services...");
+        await servicesProvider.syncFromCloud().timeout(const Duration(seconds: 15));
+        
+        debugPrint("Starting download: Quotes...");
+        await quotesProvider.syncFromCloud().timeout(const Duration(seconds: 15));
       }
+      
+      debugPrint("Sync completed successfully!");
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
@@ -246,11 +258,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     } catch (e) {
+      debugPrint("Sync error details: $e");
+      String errorMessage = 'Error de sincronización: $e';
+      if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'La sincronización tardó demasiado. Por favor, verifica tu conexión a internet o los permisos de base de datos.';
+      }
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error de sincronización: $e'),
+            content: Text(errorMessage),
             backgroundColor: const Color(0xFFDC2626),
             behavior: SnackBarBehavior.floating,
           ),
