@@ -193,8 +193,10 @@ class PdfGenerator {
                   bottom: pw.BorderSide(color: PdfColors.teal300, width: 1.5),
                 ),
                 columnWidths: {
-                  0: const pw.FlexColumnWidth(3.5),
-                  1: const pw.FlexColumnWidth(1.2),
+                  0: const pw.FlexColumnWidth(0.6),  // Cant
+                  1: const pw.FlexColumnWidth(3.0),  // Servicio
+                  2: const pw.FlexColumnWidth(1.2),  // Precio Unit.
+                  3: const pw.FlexColumnWidth(1.2),  // Subtotal
                 },
                 children: [
                   // Table Header
@@ -203,6 +205,18 @@ class PdfGenerator {
                       color: PdfColors.teal,
                     ),
                     children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 5),
+                        child: pw.Text(
+                          "Cant.",
+                          style: pw.TextStyle(
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
+                            fontSize: 10,
+                          ),
+                          textAlign: pw.TextAlign.center,
+                        ),
+                      ),
                       pw.Padding(
                         padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                         child: pw.Text(
@@ -219,7 +233,21 @@ class PdfGenerator {
                         child: pw.Align(
                           alignment: pw.Alignment.centerRight,
                           child: pw.Text(
-                            "Precio",
+                            "Precio Unit.",
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                        child: pw.Align(
+                          alignment: pw.Alignment.centerRight,
+                          child: pw.Text(
+                            "Subtotal",
                             style: pw.TextStyle(
                               fontWeight: pw.FontWeight.bold,
                               color: PdfColors.white,
@@ -232,8 +260,17 @@ class PdfGenerator {
                   ),
                   // Table Rows
                   ...quote.items.map((item) {
+                    final subtotal = item.price * item.quantity;
                     return pw.TableRow(
                       children: [
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 5),
+                          child: pw.Text(
+                            item.quantity.toString(),
+                            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                        ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                           child: pw.Text(item.name, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900)),
@@ -244,6 +281,16 @@ class PdfGenerator {
                             alignment: pw.Alignment.centerRight,
                             child: pw.Text(
                               currencyFormat.format(item.price),
+                              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900),
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                          child: pw.Align(
+                            alignment: pw.Alignment.centerRight,
+                            child: pw.Text(
+                              currencyFormat.format(subtotal),
                               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey900),
                             ),
                           ),

@@ -8,7 +8,13 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 import 'package:budapp/main.dart';
+import 'package:budapp/providers/company_provider.dart';
+import 'package:budapp/providers/services_provider.dart';
+import 'package:budapp/providers/quotes_provider.dart';
+import 'package:budapp/providers/auth_provider.dart';
+import 'package:budapp/providers/theme_provider.dart';
 
 void main() {
   setUp(() async {
@@ -17,6 +23,7 @@ void main() {
     await Hive.openBox('company_settings');
     await Hive.openBox('services');
     await Hive.openBox('quotes');
+    await Hive.openBox('theme_settings');
   });
 
   tearDown(() async {
@@ -25,7 +32,18 @@ void main() {
 
   testWidgets('App load smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => CompanyProvider()),
+          ChangeNotifierProvider(create: (_) => ServicesProvider()),
+          ChangeNotifierProvider(create: (_) => QuotesProvider()),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ],
+        child: const MyApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Verify that the App widget is successfully rendered.

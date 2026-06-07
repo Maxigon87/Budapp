@@ -58,7 +58,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   }
 
   double get _totalAmount {
-    return _quoteItems.fold(0.0, (sum, item) => sum + item.price);
+    return _quoteItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   void _addServiceItem() {
@@ -80,11 +80,78 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
       return;
     }
 
-    setState(() {
-      _quoteItems.add(QuoteItem(name: name, price: price));
-      _serviceNameController.clear();
-      _servicePriceController.clear();
-    });
+    _showQuantityDialog(name, price);
+  }
+
+  void _showQuantityDialog(String name, double price) {
+    final quantityController = TextEditingController(text: '1');
+    final dialogFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Cantidad del Servicio'),
+          content: Form(
+            key: dialogFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text('Precio unitario: \$${price.toStringAsFixed(0)}'),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: quantityController,
+                  decoration: const InputDecoration(
+                    labelText: 'Cantidad',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Ingresa la cantidad';
+                    }
+                    final qty = int.tryParse(value);
+                    if (qty == null || qty <= 0) {
+                      return 'Cantidad inválida (mayor a 0)';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (dialogFormKey.currentState!.validate()) {
+                  final qty = int.parse(quantityController.text);
+                  setState(() {
+                    _quoteItems.add(QuoteItem(name: name, price: price, quantity: qty));
+                    _serviceNameController.clear();
+                    _servicePriceController.clear();
+                    _selectedServiceCategory = 'Todas';
+                  });
+                  FocusScope.of(context).unfocus();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _removeServiceItem(int index) {
@@ -97,6 +164,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     final item = _quoteItems[index];
     final editNameController = TextEditingController(text: item.name);
     final editPriceController = TextEditingController(text: item.price.toStringAsFixed(0));
+    final editQuantityController = TextEditingController(text: item.quantity.toString());
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -125,6 +193,18 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: editQuantityController,
+                  decoration: const InputDecoration(labelText: 'Cantidad'),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Ingresa la cantidad';
+                    final qty = int.tryParse(value);
+                    if (qty == null || qty <= 0) return 'Cantidad inválida';
+                    return null;
+                  },
+                ),
               ],
             ),
           ),
@@ -140,6 +220,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     _quoteItems[index] = QuoteItem(
                       name: editNameController.text.trim(),
                       price: double.parse(editPriceController.text),
+                      quantity: int.parse(editQuantityController.text),
                     );
                   });
                   Navigator.pop(context);
@@ -392,6 +473,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     const SizedBox(height: 12),
                     // Autocomplete service name
                     Autocomplete<ServiceItem>(
+                      textEditingController: _serviceNameController,
                       optionsBuilder: (TextEditingValue textEditingValue) {
                         if (textEditingValue.text.isEmpty) {
                           return const Iterable<ServiceItem>.empty();
@@ -441,12 +523,6 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                         );
                       },
                       fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                        // Link our custom controller to autocomplete
-                        // If user types, we keep it in sync
-                        textEditingController.addListener(() {
-                          _serviceNameController.text = textEditingController.text;
-                        });
-                        
                         return TextFormField(
                           controller: textEditingController,
                           focusNode: focusNode,
@@ -519,22 +595,41 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           itemBuilder: (context, index) {
                             final item = _quoteItems[index];
                             return ListTile(
-                              title: Text(item.name, style: const TextStyle(fontSize: 14)),
+                              title: Text(
+                                item.name,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Cantidad: ${item.quantity}  •  ${currencyFormat.format(item.price)} c/u",
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Subtotal: ${currencyFormat.format(item.price * item.quantity)}",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    currencyFormat.format(item.price),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                  const SizedBox(width: 8),
                                   IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 18),
+                                    icon: const Icon(Icons.edit_outlined, size: 20),
                                     onPressed: () => _editServiceItem(index),
+                                    tooltip: 'Editar',
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
                                     onPressed: () => _removeServiceItem(index),
+                                    tooltip: 'Eliminar',
                                   ),
                                 ],
                               ),

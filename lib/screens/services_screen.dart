@@ -340,41 +340,49 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: ExpansionTile(
-                          initiallyExpanded: true,
+                          key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
+                          initiallyExpanded: _searchQuery.isNotEmpty,
                           leading: Icon(Icons.category_outlined, color: accentColor),
                           title: Text(
                             entry.key,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
-                          children: entry.value.map((item) {
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: accentColor.withOpacity(0.08),
-                                child: Icon(
-                                  Icons.handyman_outlined,
-                                  color: accentColor,
-                                  size: 20,
-                                ),
-                              ),
-                              title: Text(
-                                item.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Text(item.category),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    currencyFormat.format(item.price),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF111827),
-                                    ),
+                          children: entry.value.asMap().entries.map((itemEntry) {
+                            final index = itemEntry.key;
+                            final item = itemEntry.value;
+                            return Column(
+                              children: [
+                                if (index > 0)
+                                  Divider(
+                                    height: 1,
+                                    thickness: 0.5,
+                                    indent: 16,
+                                    endIndent: 16,
+                                    color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
                                   ),
-                                  const SizedBox(width: 8),
-                                  PopupMenuButton<String>(
+                                ListTile(
+                                  title: Text(
+                                    item.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      Text(item.category),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        currencyFormat.format(item.price),
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: PopupMenuButton<String>(
                                     onSelected: (value) {
                                       if (value == 'edit') {
                                         _showAddEditDialog(item: item);
@@ -405,8 +413,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             );
                           }).toList(),
                         ),

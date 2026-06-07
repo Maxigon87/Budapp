@@ -154,8 +154,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           horizontalInside: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
                         ),
                         columnWidths: const {
-                          0: FlexColumnWidth(3),
-                          1: FlexColumnWidth(1),
+                          0: FlexColumnWidth(0.6), // Cantidad
+                          1: FlexColumnWidth(3.0), // Detalle
+                          2: FlexColumnWidth(1.4), // Subtotal
                         },
                         children: [
                           ...quote.items.map((item) {
@@ -163,14 +164,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Text(item.name),
+                                  child: Text(
+                                    "${item.quantity}x",
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(item.name),
+                                      Text(
+                                        "${currencyFormat.format(item.price)} c/u",
+                                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
-                                      currencyFormat.format(item.price),
+                                      currencyFormat.format(item.price * item.quantity),
                                       style: const TextStyle(fontWeight: FontWeight.w500),
                                     ),
                                   ),

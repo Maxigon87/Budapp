@@ -98,17 +98,44 @@ class ServicesProvider extends ChangeNotifier {
     final importedItems = <ServiceItem>[];
     final timestamp = DateTime.now().microsecondsSinceEpoch;
 
+    // Create a map to lookup services by category and name for duplicate check
+    final serviceMap = <String, ServiceItem>{};
+    for (final s in services) {
+      final key = '${s.category.trim().toLowerCase()}_${s.name.trim().toLowerCase()}';
+      serviceMap[key] = s;
+    }
+
     for (var index = 0; index < rows.length; index++) {
       final row = rows[index];
-      final id = '${timestamp}_$index';
-      final item = ServiceItem(
-        id: id,
-        name: row.name,
-        price: row.price,
-        category: _normalizeCategory(row.category),
-      );
-      importedItems.add(item);
-      await _box.put(id, item.toMap());
+      final normalizedCategory = _normalizeCategory(row.category);
+      final normalizedName = row.name.trim();
+      final key = '${normalizedCategory.toLowerCase()}_${normalizedName.toLowerCase()}';
+
+      final existing = serviceMap[key];
+      if (existing != null) {
+        // Overwrite the price of the existing service
+        final updatedItem = ServiceItem(
+          id: existing.id,
+          name: existing.name, // Keep the existing case of the service name
+          price: row.price,
+          category: existing.category,
+        );
+        serviceMap[key] = updatedItem;
+        importedItems.add(updatedItem);
+        await _box.put(existing.id, updatedItem.toMap());
+      } else {
+        // Add new service
+        final id = '${timestamp}_$index';
+        final newItem = ServiceItem(
+          id: id,
+          name: row.name,
+          price: row.price,
+          category: normalizedCategory,
+        );
+        serviceMap[key] = newItem;
+        importedItems.add(newItem);
+        await _box.put(id, newItem.toMap());
+      }
     }
 
     if (importedItems.isEmpty) return 0;

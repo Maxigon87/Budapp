@@ -8,16 +8,19 @@ import 'dart:developer' as developer;
 class QuoteItem {
   final String name;
   final double price;
+  final int quantity;
 
   QuoteItem({
     required this.name,
     required this.price,
+    this.quantity = 1,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'name': name,
       'price': price,
+      'quantity': quantity,
     };
   }
 
@@ -25,6 +28,7 @@ class QuoteItem {
     return QuoteItem(
       name: (map['name'] ?? '') as String,
       price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
+      quantity: (map['quantity'] ?? 1) as int,
     );
   }
 }
