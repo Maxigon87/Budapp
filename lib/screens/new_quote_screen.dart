@@ -34,6 +34,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   // Add item form controllers
   final _serviceNameController = TextEditingController();
   final _servicePriceController = TextEditingController();
+  final _serviceNameFocusNode = FocusNode();
   String _selectedServiceCategory = 'Todas';
   bool _isSaving = false;
 
@@ -54,6 +55,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _observationsController.dispose();
     _serviceNameController.dispose();
     _servicePriceController.dispose();
+    _serviceNameFocusNode.dispose();
     super.dispose();
   }
 
@@ -474,6 +476,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     // Autocomplete service name
                     Autocomplete<ServiceItem>(
                       textEditingController: _serviceNameController,
+                      focusNode: _serviceNameFocusNode,
                       optionsBuilder: (TextEditingValue textEditingValue) {
                         if (textEditingValue.text.isEmpty) {
                           return const Iterable<ServiceItem>.empty();
