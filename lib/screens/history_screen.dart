@@ -165,7 +165,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Text(
-                                    "${item.quantity}x",
+                                    "${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity}x",
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                 ),

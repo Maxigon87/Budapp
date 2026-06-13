@@ -137,7 +137,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Ingresa la cantidad';
                     }
-                    final qty = int.tryParse(value);
+                    final qty = double.tryParse(value);
                     if (qty == null || qty <= 0) {
                       return 'Cantidad inválida (mayor a 0)';
                     }
@@ -155,7 +155,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             FilledButton(
               onPressed: () {
                 if (dialogFormKey.currentState!.validate()) {
-                  final qty = int.parse(quantityController.text);
+                  final qty = double.parse(quantityController.text);
                   setState(() {
                     _quoteItems.add(QuoteItem(name: name, price: price, quantity: qty, isMaterial: false));
                     _serviceNameController.clear();
@@ -301,7 +301,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 FilledButton(
                   onPressed: () {
                     if (dialogFormKey.currentState!.validate()) {
-                      final q = double.parse(quantityController.text).toInt();
+                      final q = double.parse(quantityController.text);
                       final p = double.parse(priceController.text);
                       setState(() {
                         _quoteItems.add(QuoteItem(
@@ -329,7 +329,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   }
 
   void _showEditMaterialDialog(int index, QuoteItem item) {
-    final quantityController = TextEditingController(text: item.quantity.toString());
+    final quantityController = TextEditingController(text: (item.quantity % 1 == 0 ? item.quantity.toInt().toString() : item.quantity.toString()));
     final priceController = TextEditingController(text: item.price.toStringAsFixed(0));
     final dialogFormKey = GlobalKey<FormState>();
 
@@ -435,7 +435,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 FilledButton(
                   onPressed: () {
                     if (dialogFormKey.currentState!.validate()) {
-                      final q = double.parse(quantityController.text).toInt();
+                      final q = double.parse(quantityController.text);
                       final p = double.parse(priceController.text);
                       setState(() {
                         _quoteItems[index] = QuoteItem(
@@ -469,7 +469,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     final item = _quoteItems[index];
     final editNameController = TextEditingController(text: item.name);
     final editPriceController = TextEditingController(text: item.price.toStringAsFixed(0));
-    final editQuantityController = TextEditingController(text: item.quantity.toString());
+    final editQuantityController = TextEditingController(text: (item.quantity % 1 == 0 ? item.quantity.toInt().toString() : item.quantity.toString()));
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -505,7 +505,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return 'Ingresa la cantidad';
-                    final qty = int.tryParse(value);
+                    final qty = double.tryParse(value);
                     if (qty == null || qty <= 0) return 'Cantidad inválida';
                     return null;
                   },
@@ -525,7 +525,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     _quoteItems[index] = QuoteItem(
                       name: editNameController.text.trim(),
                       price: double.parse(editPriceController.text),
-                      quantity: int.parse(editQuantityController.text),
+                      quantity: double.parse(editQuantityController.text),
                       isMaterial: false,
                     );
                   });
@@ -1079,7 +1079,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Cantidad: ${item.quantity}  •  ${currencyFormat.format(item.price)} c/u",
+                                    "Cantidad: ${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity}  •  ${currencyFormat.format(item.price)} c/u",
                                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                   ),
                                   const SizedBox(height: 2),
@@ -1175,7 +1175,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                 children: [
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Cantidad: ${item.quantity} ${item.unidad ?? 'Unidad'}  •  ${currencyFormat.format(item.price)} c/u",
+                                    "Cantidad: ${item.quantity % 1 == 0 ? item.quantity.toInt() : item.quantity} ${item.unidad ?? 'Unidad'}  •  ${currencyFormat.format(item.price)} c/u",
                                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                   ),
                                   const SizedBox(height: 2),
