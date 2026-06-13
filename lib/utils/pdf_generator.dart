@@ -254,7 +254,7 @@ class PdfGenerator {
                           pw.Padding(
                             padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                             child: pw.Text(
-                              item.quantity.toString(),
+                              (item.quantity % 1 == 0 ? item.quantity.toInt().toString() : item.quantity.toString()),
                               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey900),
                               textAlign: pw.TextAlign.center,
                             ),
@@ -373,7 +373,7 @@ class PdfGenerator {
                           pw.Padding(
                             padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 5),
                             child: pw.Text(
-                              item.quantity.toString(),
+                              (item.quantity % 1 == 0 ? item.quantity.toInt().toString() : item.quantity.toString()),
                               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey900),
                               textAlign: pw.TextAlign.center,
                             ),

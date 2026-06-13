@@ -8,14 +8,14 @@ import 'dart:developer' as developer;
 class QuoteItem {
   final String name;
   final double price;
-  final int quantity;
+  final double quantity;
   final bool isMaterial;
   final String? unidad;
 
   QuoteItem({
     required this.name,
     required this.price,
-    this.quantity = 1,
+    this.quantity = 1.0,
     this.isMaterial = false,
     this.unidad,
   });
@@ -34,7 +34,7 @@ class QuoteItem {
     return QuoteItem(
       name: (map['name'] ?? '') as String,
       price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
-      quantity: (map['quantity'] ?? 1) as int,
+      quantity: (map['quantity'] is int) ? (map['quantity'] as int).toDouble() : (map['quantity'] ?? 1.0) as double,
       isMaterial: (map['isMaterial'] ?? false) as bool,
       unidad: map['unidad'] as String?,
     );
