@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/company_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/services_provider.dart';
+import '../providers/materials_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
 import 'backup_restore_screen.dart';
@@ -210,6 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _syncData(bool upload) async {
     final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
     final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
+    final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
 
     showDialog(
@@ -233,6 +235,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         
         debugPrint("Starting upload: Services...");
         await servicesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
+
+        debugPrint("Starting upload: Materials...");
+        await materialsProvider.uploadToCloud().timeout(const Duration(seconds: 15));
         
         debugPrint("Starting upload: Quotes...");
         await quotesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
@@ -242,6 +247,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         
         debugPrint("Starting download: Services...");
         await servicesProvider.syncFromCloud().timeout(const Duration(seconds: 15));
+
+        debugPrint("Starting download: Materials...");
+        await materialsProvider.syncFromCloud().timeout(const Duration(seconds: 15));
         
         debugPrint("Starting download: Quotes...");
         await quotesProvider.syncFromCloud().timeout(const Duration(seconds: 15));

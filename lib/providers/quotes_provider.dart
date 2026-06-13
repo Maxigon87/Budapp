@@ -9,11 +9,15 @@ class QuoteItem {
   final String name;
   final double price;
   final int quantity;
+  final bool isMaterial;
+  final String? unidad;
 
   QuoteItem({
     required this.name,
     required this.price,
     this.quantity = 1,
+    this.isMaterial = false,
+    this.unidad,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +25,8 @@ class QuoteItem {
       'name': name,
       'price': price,
       'quantity': quantity,
+      'isMaterial': isMaterial,
+      'unidad': unidad,
     };
   }
 
@@ -29,6 +35,8 @@ class QuoteItem {
       name: (map['name'] ?? '') as String,
       price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
       quantity: (map['quantity'] ?? 1) as int,
+      isMaterial: (map['isMaterial'] ?? false) as bool,
+      unidad: map['unidad'] as String?,
     );
   }
 }

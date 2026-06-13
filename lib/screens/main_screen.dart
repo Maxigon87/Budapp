@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'services_screen.dart';
+import 'materials_screen.dart';
 import 'settings_screen.dart';
 import 'new_quote_screen.dart';
 import '../providers/auth_provider.dart';
 import '../providers/company_provider.dart';
 import '../providers/services_provider.dart';
+import '../providers/materials_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -27,6 +29,7 @@ class MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const HistoryScreen(),
     const ServicesScreen(),
+    const MaterialsScreen(),
     const SettingsScreen(),
   ];
 
@@ -68,11 +71,13 @@ class MainScreenState extends State<MainScreen> {
     try {
       final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
       final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
+      final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
       final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
 
       await Future.wait([
         companyProvider.syncFromCloud(),
         servicesProvider.syncFromCloud(),
+        materialsProvider.syncFromCloud(),
         quotesProvider.syncFromCloud(),
       ]);
 
@@ -130,6 +135,11 @@ class MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.handyman_outlined),
             selectedIcon: Icon(Icons.handyman),
             label: 'Servicios',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'Materiales',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

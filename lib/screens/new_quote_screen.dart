@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/services_provider.dart';
+import '../providers/materials_provider.dart';
 import '../providers/company_provider.dart';
 import '../utils/pdf_generator.dart';
 import 'package:printing/printing.dart';
@@ -38,6 +39,12 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   String _selectedServiceCategory = 'Todas';
   bool _isSaving = false;
 
+  // Add material form controllers
+  final _materialNameController = TextEditingController();
+  final _materialPriceController = TextEditingController();
+  final _materialNameFocusNode = FocusNode();
+  MaterialItem? _selectedMaterialFromAutocomplete;
+
   @override
   void initState() {
     super.initState();
@@ -56,11 +63,22 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _serviceNameController.dispose();
     _servicePriceController.dispose();
     _serviceNameFocusNode.dispose();
+    _materialNameController.dispose();
+    _materialPriceController.dispose();
+    _materialNameFocusNode.dispose();
     super.dispose();
   }
 
   double get _totalAmount {
     return _quoteItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  }
+
+  double get _servicesTotal {
+    return _quoteItems.where((i) => !i.isMaterial).fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  }
+
+  double get _materialsTotal {
+    return _quoteItems.where((i) => i.isMaterial).fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   void _addServiceItem() {
@@ -139,7 +157,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 if (dialogFormKey.currentState!.validate()) {
                   final qty = int.parse(quantityController.text);
                   setState(() {
-                    _quoteItems.add(QuoteItem(name: name, price: price, quantity: qty));
+                    _quoteItems.add(QuoteItem(name: name, price: price, quantity: qty, isMaterial: false));
                     _serviceNameController.clear();
                     _servicePriceController.clear();
                     _selectedServiceCategory = 'Todas';
@@ -151,6 +169,291 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
               child: const Text('Aceptar'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _addMaterialItem() {
+    final name = _materialNameController.text.trim();
+    final priceStr = _materialPriceController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa el nombre del material'), behavior: SnackBarBehavior.floating),
+      );
+      return;
+    }
+
+    final price = double.tryParse(priceStr);
+    final unit = _selectedMaterialFromAutocomplete?.unidad ?? 'Unidad';
+
+    _showMaterialQuantityDialog(name, unit, price);
+  }
+
+  void _showMaterialQuantityDialog(String name, String unidad, double? basePrice) {
+    final quantityController = TextEditingController(text: '1');
+    final priceController = TextEditingController(text: basePrice != null ? basePrice.toStringAsFixed(0) : '');
+    final dialogFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            double qty = double.tryParse(quantityController.text) ?? 1.0;
+            double prc = double.tryParse(priceController.text) ?? 0.0;
+            double total = qty * prc;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Cantidad y Precio de Material'),
+              content: Form(
+                key: dialogFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Unidad de medida: $unidad', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    if (basePrice != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Último precio de catálogo: ${currencyFormat.format(basePrice)}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    ],
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: quantityController,
+                      decoration: InputDecoration(
+                        labelText: 'Cantidad ($unidad)',
+                        border: const OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      onChanged: (val) {
+                        setStateDialog(() {});
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa la cantidad';
+                        }
+                        final q = double.tryParse(value);
+                        if (q == null || q <= 0) {
+                          return 'Cantidad inválida';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: priceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Precio Unitario (\$, editable)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.attach_money),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setStateDialog(() {});
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa el precio unitario';
+                        }
+                        final p = double.tryParse(value);
+                        if (p == null || p < 0) {
+                          return 'Precio inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'TOTAL:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        Text(
+                          currencyFormat.format(total),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (dialogFormKey.currentState!.validate()) {
+                      final q = double.parse(quantityController.text).toInt();
+                      final p = double.parse(priceController.text);
+                      setState(() {
+                        _quoteItems.add(QuoteItem(
+                          name: name,
+                          price: p,
+                          quantity: q,
+                          isMaterial: true,
+                          unidad: unidad,
+                        ));
+                        _materialNameController.clear();
+                        _materialPriceController.clear();
+                        _selectedMaterialFromAutocomplete = null;
+                      });
+                      FocusScope.of(context).unfocus();
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditMaterialDialog(int index, QuoteItem item) {
+    final quantityController = TextEditingController(text: item.quantity.toString());
+    final priceController = TextEditingController(text: item.price.toStringAsFixed(0));
+    final dialogFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            double qty = double.tryParse(quantityController.text) ?? 1.0;
+            double prc = double.tryParse(priceController.text) ?? 0.0;
+            double total = qty * prc;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Editar Material'),
+              content: Form(
+                key: dialogFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    if (item.unidad != null) ...[
+                      const SizedBox(height: 4),
+                      Text('Unidad de medida: ${item.unidad}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    ],
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: quantityController,
+                      decoration: InputDecoration(
+                        labelText: 'Cantidad${item.unidad != null ? " (${item.unidad})" : ""}',
+                        border: const OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      onChanged: (val) {
+                        setStateDialog(() {});
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa la cantidad';
+                        }
+                        final q = double.tryParse(value);
+                        if (q == null || q <= 0) {
+                          return 'Cantidad inválida';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: priceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Precio Unitario (\$, editable)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.attach_money),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setStateDialog(() {});
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa el precio unitario';
+                        }
+                        final p = double.tryParse(value);
+                        if (p == null || p < 0) {
+                          return 'Precio inválido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'TOTAL:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        Text(
+                          currencyFormat.format(total),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (dialogFormKey.currentState!.validate()) {
+                      final q = double.parse(quantityController.text).toInt();
+                      final p = double.parse(priceController.text);
+                      setState(() {
+                        _quoteItems[index] = QuoteItem(
+                          name: item.name,
+                          price: p,
+                          quantity: q,
+                          isMaterial: true,
+                          unidad: item.unidad,
+                        );
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -223,6 +526,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       name: editNameController.text.trim(),
                       price: double.parse(editPriceController.text),
                       quantity: int.parse(editQuantityController.text),
+                      isMaterial: false,
                     );
                   });
                   Navigator.pop(context);
@@ -246,12 +550,16 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     if (_quoteItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, agrega al menos un servicio al presupuesto'),
+          content: Text('Por favor, agrega al menos un servicio o material al presupuesto'),
           behavior: SnackBarBehavior.floating,
         ),
       );
       return null;
     }
+
+    // Capture providers before any async/await gap
+    final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
+    final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
 
     setState(() {
       _isSaving = true;
@@ -271,15 +579,40 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
         observations: _observationsController.text.trim(),
       );
 
-      await Provider.of<QuotesProvider>(context, listen: false).saveQuote(newQuote);
+      // Save the quote itself using captured provider
+      await quotesProvider.saveQuote(newQuote);
+
+      // Auto-learn/update materials prices:
+      final registeredMaterials = materialsProvider.materials;
+      final List<MaterialItem> materialsToUpdate = [];
+
+      for (final item in _quoteItems) {
+        if (item.isMaterial) {
+          // Find by name case-insensitively
+          final match = registeredMaterials.firstWhere(
+            (m) => m.nombre.trim().toLowerCase() == item.name.trim().toLowerCase(),
+            orElse: () => MaterialItem(id: '', nombre: '', unidad: ''),
+          );
+          if (match.id.isNotEmpty) {
+            // Update its ultimoPrecio with the price used in this quote
+            materialsToUpdate.add(match.copyWith(ultimoPrecio: item.price));
+          }
+        }
+      }
+      if (materialsToUpdate.isNotEmpty) {
+        await materialsProvider.saveMaterials(materialsToUpdate);
+      }
+
       return newQuote;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar presupuesto: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar presupuesto: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       return null;
     } finally {
       setState(() {
@@ -295,9 +628,12 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _observationsController.clear();
     _serviceNameController.clear();
     _servicePriceController.clear();
+    _materialNameController.clear();
+    _materialPriceController.clear();
     setState(() {
       _quoteItems.clear();
       _selectedServiceCategory = 'Todas';
+      _selectedMaterialFromAutocomplete = null;
     });
   }
 
@@ -340,9 +676,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   Widget build(BuildContext context) {
     final company = Provider.of<CompanyProvider>(context);
     final servicesProvider = Provider.of<ServicesProvider>(context);
+    final materialsProvider = Provider.of<MaterialsProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final accentColor = themeProvider.lightAccent;
     final frequentServices = servicesProvider.services;
+    final frequentMaterials = materialsProvider.materials;
     final serviceCategories = ['Todas', ...servicesProvider.categories];
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
@@ -570,14 +908,120 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Services Table Card
+            // Materials Add Card
+            Text(
+              "Agregar Material",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    // Autocomplete material name
+                    Autocomplete<MaterialItem>(
+                      textEditingController: _materialNameController,
+                      focusNode: _materialNameFocusNode,
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<MaterialItem>.empty();
+                        }
+                        return frequentMaterials.where((option) {
+                          return option.nombre
+                              .toLowerCase()
+                              .contains(textEditingValue.text.toLowerCase());
+                        });
+                      },
+                      displayStringForOption: (option) => option.nombre,
+                      onSelected: (option) {
+                        setState(() {
+                          _materialNameController.text = option.nombre;
+                          _materialPriceController.text = option.ultimoPrecio != null ? option.ultimoPrecio!.toStringAsFixed(0) : '';
+                          _selectedMaterialFromAutocomplete = option;
+                        });
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final option = options.elementAt(index);
+                                  final hasPrice = option.ultimoPrecio != null;
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(option.nombre),
+                                    subtitle: Text('Medida: ${option.unidad}'),
+                                    trailing: Text(hasPrice ? currencyFormat.format(option.ultimoPrecio) : 'Sin precio'),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: textEditingController,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Buscar o escribir material...',
+                            prefixIcon: Icon(Icons.inventory_2_outlined),
+                            border: OutlineInputBorder(),
+                          ),
+                          textCapitalization: TextCapitalization.sentences,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _materialPriceController,
+                            decoration: const InputDecoration(
+                              labelText: 'Precio sugerido (\$, opcional)',
+                              prefixIcon: Icon(Icons.attach_money),
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton.icon(
+                          onPressed: _addMaterialItem,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Añadir'),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            backgroundColor: accentColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Services Added Card
             Text(
               "Servicios Añadidos",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Card(
-              child: _quoteItems.isEmpty
+              child: _quoteItems.where((i) => !i.isMaterial).isEmpty
                   ? const Padding(
                       padding: EdgeInsets.all(24.0),
                       child: Center(
@@ -597,6 +1041,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           separatorBuilder: (context, index) => const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final item = _quoteItems[index];
+                            if (item.isMaterial) return const SizedBox.shrink(); // hide materials here
                             return ListTile(
                               title: Text(
                                 item.name,
@@ -646,14 +1091,14 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                "TOTAL",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                "SUBTOTAL SERVICIOS",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
                               ),
                               Text(
-                                currencyFormat.format(_totalAmount),
+                                currencyFormat.format(_servicesTotal),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
@@ -662,6 +1107,136 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                         ),
                       ],
                     ),
+            ),
+            const SizedBox(height: 24),
+
+            // Materials Added Card
+            Text(
+              "Materiales Añadidos",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: _quoteItems.where((i) => i.isMaterial).isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Center(
+                        child: Text(
+                          "Aún no has agregado ningún material a este presupuesto.",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _quoteItems.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = _quoteItems[index];
+                            if (!item.isMaterial) return const SizedBox.shrink(); // hide services here
+                            return ListTile(
+                              title: Text(
+                                item.name,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Cantidad: ${item.quantity} ${item.unidad ?? 'Unidad'}  •  ${currencyFormat.format(item.price)} c/u",
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Subtotal: ${currencyFormat.format(item.price * item.quantity)}",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    onPressed: () => _showEditMaterialDialog(index, item),
+                                    tooltip: 'Editar',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                    onPressed: () => _removeServiceItem(index),
+                                    tooltip: 'Eliminar',
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                "SUBTOTAL MATERIALES",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+                              ),
+                              Text(
+                                currencyFormat.format(_materialsTotal),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 24),
+
+            // Total General Card
+            Card(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1.5),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "TOTAL GENERAL",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(_totalAmount),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -689,15 +1264,14 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     onPressed: _isSaving
                         ? null
                         : () async {
+                            final navigator = Navigator.of(context);
                             final quote = await _saveQuoteToDb();
                             if (quote != null && mounted) {
                               _clearFields();
                               await _showSuccessDialog(
                                 'Presupuesto N° ${quote.number} guardado en el historial con éxito.',
                               );
-                              if (mounted) {
-                                Navigator.pop(context);
-                              }
+                              navigator.pop();
                             }
                           },
                     style: OutlinedButton.styleFrom(
@@ -718,6 +1292,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     onPressed: _isSaving
                         ? null
                         : () async {
+                            final navigator = Navigator.of(context);
                             final quote = await _saveQuoteToDb();
                             if (quote != null && mounted) {
                               // Generate PDF Bytes
@@ -730,15 +1305,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                 bytes: pdfBytes,
                                 filename: 'presupuesto_${quote.number}.pdf',
                               );
-                              if (mounted) {
-                                _clearFields();
-                                await _showSuccessDialog(
-                                  'Presupuesto N° ${quote.number} guardado y listo para compartir.',
-                                );
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                }
-                              }
+                              _clearFields();
+                              await _showSuccessDialog(
+                                'Presupuesto N° ${quote.number} guardado y listo para compartir.',
+                              );
+                              navigator.pop();
                             }
                           },
                     style: FilledButton.styleFrom(

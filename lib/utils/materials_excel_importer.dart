@@ -3,23 +3,23 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
-class ServiceExcelRow {
-  final String name;
-  final double price;
-  final String category;
+class MaterialExcelRow {
+  final String nombre;
+  final String unidad;
+  final double? ultimoPrecio;
 
-  const ServiceExcelRow({
-    required this.name,
-    required this.price,
-    required this.category,
+  const MaterialExcelRow({
+    required this.nombre,
+    required this.unidad,
+    this.ultimoPrecio,
   });
 }
 
-class ServiceExcelImportResult {
-  final List<ServiceExcelRow> rows;
+class MaterialExcelImportResult {
+  final List<MaterialExcelRow> rows;
   final List<String> errors;
 
-  const ServiceExcelImportResult({
+  const MaterialExcelImportResult({
     required this.rows,
     required this.errors,
   });
@@ -27,17 +27,19 @@ class ServiceExcelImportResult {
   bool get hasErrors => errors.isNotEmpty;
 }
 
-class ServicesExcelImporter {
-  static const List<String> headers = ['Nombre del servicio', 'Precio', 'Categoría'];
+class MaterialsExcelImporter {
+  static const List<String> headers = ['Nombre', 'Unidad', 'Último Precio'];
 
-  static Uint8List buildTemplate({List<ServiceExcelRow> rows = const []}) {
+  static Uint8List buildTemplate({List<MaterialExcelRow> rows = const []}) {
     final archive = Archive();
     final rowValues = <List<Object?>>[
       headers,
-      if (rows.isEmpty)
-        const ['Instalación de ejemplo', 15000, 'Soporte técnico']
-      else
-        ...rows.map((row) => [row.name, row.price, row.category]),
+      if (rows.isEmpty) ...[
+        const ['Cable 2.5 mm', 'Metro', 1200],
+        const ['Caño PVC 2"', 'Unidad', 8500],
+        const ['Tornillo 8x50', 'Unidad', 150],
+      ] else
+        ...rows.map((row) => [row.nombre, row.unidad, row.ultimoPrecio]),
     ];
 
     archive.addFile(ArchiveFile.string('[Content_Types].xml', _contentTypesXml));
@@ -50,14 +52,14 @@ class ServicesExcelImporter {
     return Uint8List.fromList(ZipEncoder().encode(archive));
   }
 
-  static ServiceExcelImportResult parse(Uint8List bytes) {
+  static MaterialExcelImportResult parse(Uint8List bytes) {
     final errors = <String>[];
-    final rows = <ServiceExcelRow>[];
+    final rows = <MaterialExcelRow>[];
 
     final archive = ZipDecoder().decodeBytes(bytes);
     final sheetFile = archive.findFile('xl/worksheets/sheet1.xml');
     if (sheetFile == null) {
-      return const ServiceExcelImportResult(
+      return const MaterialExcelImportResult(
         rows: [],
         errors: ['No se encontró la hoja principal del archivo Excel.'],
       );
@@ -68,47 +70,50 @@ class ServicesExcelImporter {
     final parsedRows = _readRows(sheetXml, sharedStrings);
 
     if (parsedRows.length <= 1) {
-      return const ServiceExcelImportResult(
+      return const MaterialExcelImportResult(
         rows: [],
-        errors: ['El archivo no contiene servicios para importar.'],
+        errors: ['El archivo no contiene materiales para importar.'],
       );
     }
 
     for (var rowIndex = 1; rowIndex < parsedRows.length; rowIndex++) {
       final excelRowNumber = rowIndex + 1;
       final row = parsedRows[rowIndex];
-      final name = _valueAt(row, 0).trim();
-      final priceText = _valueAt(row, 1).trim();
-      final category = _valueAt(row, 2).trim();
+      final nombre = _valueAt(row, 0).trim();
+      final unidad = _valueAt(row, 1).trim();
+      final priceText = _valueAt(row, 2).trim();
 
-      if (name.isEmpty && priceText.isEmpty && category.isEmpty) {
+      if (nombre.isEmpty && unidad.isEmpty && priceText.isEmpty) {
         continue;
       }
 
-      if (name.isEmpty) {
-        errors.add('Fila $excelRowNumber: falta el nombre del servicio.');
+      if (nombre.isEmpty) {
+        errors.add('Fila $excelRowNumber: falta el nombre del material.');
         continue;
       }
 
-      final price = _parsePrice(priceText);
-      if (price == null || price < 0) {
-        errors.add('Fila $excelRowNumber: el precio "$priceText" no es válido.');
+      if (unidad.isEmpty) {
+        errors.add('Fila $excelRowNumber: falta la unidad de medida.');
         continue;
       }
 
-      if (category.isEmpty) {
-        errors.add('Fila $excelRowNumber: falta la categoría.');
-        continue;
+      double? price;
+      if (priceText.isNotEmpty) {
+        price = _parsePrice(priceText);
+        if (price == null || price < 0) {
+          errors.add('Fila $excelRowNumber: el precio "$priceText" no es válido.');
+          continue;
+        }
       }
 
-      rows.add(ServiceExcelRow(name: name, price: price, category: category));
+      rows.add(MaterialExcelRow(nombre: nombre, unidad: unidad, ultimoPrecio: price));
     }
 
     if (rows.isEmpty && errors.isEmpty) {
-      errors.add('El archivo no contiene servicios para importar.');
+      errors.add('El archivo no contiene materiales para importar.');
     }
 
-    return ServiceExcelImportResult(rows: rows, errors: errors);
+    return MaterialExcelImportResult(rows: rows, errors: errors);
   }
 
   static List<String> _readSharedStrings(Archive archive) {
@@ -188,7 +193,6 @@ class ServicesExcelImporter {
     final lastDot = cleaned.lastIndexOf('.');
     final decimalSeparatorIndex = lastComma > lastDot ? lastComma : lastDot;
     final fractionalDigits = decimalSeparatorIndex >= 0 ? cleaned.length - decimalSeparatorIndex - 1 : 0;
-
     if (decimalSeparatorIndex >= 0 && fractionalDigits > 0 && fractionalDigits <= 2) {
       final integerPart = cleaned.substring(0, decimalSeparatorIndex).replaceAll(RegExp(r'[^0-9-]'), '');
       final fractionalPart = cleaned.substring(decimalSeparatorIndex + 1).replaceAll(RegExp(r'[^0-9]'), '');
@@ -273,7 +277,7 @@ const String _rootRelsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="
 const String _workbookXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="Servicios" sheetId="1" r:id="rId1"/>
+    <sheet name="Materiales" sheetId="1" r:id="rId1"/>
   </sheets>
 </workbook>''';
 

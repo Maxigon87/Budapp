@@ -9,6 +9,7 @@ import 'package:file_selector/file_selector.dart';
 
 import '../providers/company_provider.dart';
 import '../providers/services_provider.dart';
+import '../providers/materials_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
 
@@ -40,6 +41,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final companyBox = Hive.box('company_settings');
       final servicesBox = Hive.box('services');
       final quotesBox = Hive.box('quotes');
+      final materialsBox = Hive.box('materials');
 
       // 1. Gather company settings
       final Map<String, dynamic> companyData = {};
@@ -56,7 +58,16 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         }
       }
 
-      // 3. Gather quotes
+      // 3. Gather materials
+      final List<Map<String, dynamic>> materialsData = [];
+      for (var key in materialsBox.keys) {
+        final val = materialsBox.get(key);
+        if (val is Map) {
+          materialsData.add(Map<String, dynamic>.from(val));
+        }
+      }
+
+      // 4. Gather quotes
       final List<Map<String, dynamic>> quotesData = [];
       for (var key in quotesBox.keys) {
         final val = quotesBox.get(key);
@@ -65,12 +76,13 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         }
       }
 
-      // 4. Construct complete backup object
+      // 5. Construct complete backup object
       final backup = {
         'version': 1,
         'timestamp': DateTime.now().toIso8601String(),
         'company_settings': companyData,
         'services': servicesData,
+        'materials': materialsData,
         'quotes': quotesData,
       };
 
@@ -173,11 +185,13 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final companyBox = Hive.box('company_settings');
       final servicesBox = Hive.box('services');
       final quotesBox = Hive.box('quotes');
+      final materialsBox = Hive.box('materials');
 
       // Clear current boxes
       await companyBox.clear();
       await servicesBox.clear();
       await quotesBox.clear();
+      await materialsBox.clear();
 
       // 1. Restore company settings
       final companyData = backup['company_settings'] as Map<String, dynamic>;
@@ -195,7 +209,19 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         }
       }
 
-      // 3. Restore quotes
+      // 3. Restore materials
+      if (backup.containsKey('materials')) {
+        final materialsData = backup['materials'] as List;
+        for (var item in materialsData) {
+          if (item is Map) {
+            final materialMap = Map<String, dynamic>.from(item);
+            final id = materialMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+            await materialsBox.put(id, materialMap);
+          }
+        }
+      }
+
+      // 4. Restore quotes
       final quotesData = backup['quotes'] as List;
       for (var item in quotesData) {
         if (item is Map) {
@@ -209,6 +235,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       if (mounted) {
         await Provider.of<CompanyProvider>(context, listen: false).refresh();
         Provider.of<ServicesProvider>(context, listen: false).refresh();
+        Provider.of<MaterialsProvider>(context, listen: false).refresh();
         Provider.of<QuotesProvider>(context, listen: false).refresh();
 
         ScaffoldMessenger.of(context).showSnackBar(

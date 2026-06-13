@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/company_provider.dart';
 import 'providers/services_provider.dart';
+import 'providers/materials_provider.dart';
 import 'providers/quotes_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/theme_provider.dart';
@@ -25,6 +26,7 @@ void main() async {
   await Hive.openBox('services');
   await Hive.openBox('quotes');
   await Hive.openBox('theme_settings');
+  await Hive.openBox('materials');
 
   // Try initializing Firebase
   try {
@@ -55,6 +57,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => CompanyProvider()),
         ChangeNotifierProvider(create: (_) => ServicesProvider()),
+        ChangeNotifierProvider(create: (_) => MaterialsProvider()),
         ChangeNotifierProvider(create: (_) => QuotesProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
