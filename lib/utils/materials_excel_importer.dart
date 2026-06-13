@@ -5,12 +5,12 @@ import 'package:archive/archive.dart';
 
 class MaterialExcelRow {
   final String nombre;
-  final String unidad;
+  final String categoria;
   final double? ultimoPrecio;
 
   const MaterialExcelRow({
     required this.nombre,
-    required this.unidad,
+    required this.categoria,
     this.ultimoPrecio,
   });
 }
@@ -28,18 +28,18 @@ class MaterialExcelImportResult {
 }
 
 class MaterialsExcelImporter {
-  static const List<String> headers = ['Nombre', 'Unidad', 'Último Precio'];
+  static const List<String> headers = ['Nombre', 'Categoría', 'Último Precio'];
 
   static Uint8List buildTemplate({List<MaterialExcelRow> rows = const []}) {
     final archive = Archive();
     final rowValues = <List<Object?>>[
       headers,
       if (rows.isEmpty) ...[
-        const ['Cable 2.5 mm', 'Metro', 1200],
-        const ['Caño PVC 2"', 'Unidad', 8500],
-        const ['Tornillo 8x50', 'Unidad', 150],
+        const ['Cable 2.5 mm', 'Electricidad', 1200],
+        const ['Caño PVC 2"', 'Ferretería', 8500],
+        const ['Tornillo 8x50', 'Ferretería', 150],
       ] else
-        ...rows.map((row) => [row.nombre, row.unidad, row.ultimoPrecio]),
+        ...rows.map((row) => [row.nombre, row.categoria, row.ultimoPrecio]),
     ];
 
     archive.addFile(ArchiveFile.string('[Content_Types].xml', _contentTypesXml));
@@ -80,10 +80,10 @@ class MaterialsExcelImporter {
       final excelRowNumber = rowIndex + 1;
       final row = parsedRows[rowIndex];
       final nombre = _valueAt(row, 0).trim();
-      final unidad = _valueAt(row, 1).trim();
+      final categoria = _valueAt(row, 1).trim();
       final priceText = _valueAt(row, 2).trim();
 
-      if (nombre.isEmpty && unidad.isEmpty && priceText.isEmpty) {
+      if (nombre.isEmpty && categoria.isEmpty && priceText.isEmpty) {
         continue;
       }
 
@@ -92,8 +92,8 @@ class MaterialsExcelImporter {
         continue;
       }
 
-      if (unidad.isEmpty) {
-        errors.add('Fila $excelRowNumber: falta la unidad de medida.');
+      if (categoria.isEmpty) {
+        errors.add('Fila $excelRowNumber: falta la categoría.');
         continue;
       }
 
@@ -106,7 +106,7 @@ class MaterialsExcelImporter {
         }
       }
 
-      rows.add(MaterialExcelRow(nombre: nombre, unidad: unidad, ultimoPrecio: price));
+      rows.add(MaterialExcelRow(nombre: nombre, categoria: categoria, ultimoPrecio: price));
     }
 
     if (rows.isEmpty && errors.isEmpty) {

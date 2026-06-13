@@ -6,15 +6,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 
 class MaterialItem {
+  static const String defaultCategory = 'Sin categoría';
+
   final String id;
   final String nombre;
-  final String unidad;
+  final String categoria;
   final double? ultimoPrecio;
 
   MaterialItem({
     required this.id,
     required this.nombre,
-    required this.unidad,
+    required this.categoria,
     this.ultimoPrecio,
   });
 
@@ -22,16 +24,17 @@ class MaterialItem {
     return {
       'id': id,
       'nombre': nombre,
-      'unidad': unidad,
+      'categoria': categoria,
       'ultimoPrecio': ultimoPrecio,
     };
   }
 
   factory MaterialItem.fromMap(Map<dynamic, dynamic> map) {
+    final rawCategory = (map['categoria'] ?? map['unidad'] ?? '') as String;
     return MaterialItem(
       id: (map['id'] ?? '') as String,
       nombre: (map['nombre'] ?? '') as String,
-      unidad: (map['unidad'] ?? '') as String,
+      categoria: rawCategory.trim().isEmpty ? defaultCategory : rawCategory.trim(),
       ultimoPrecio: map['ultimoPrecio'] != null
           ? (map['ultimoPrecio'] is int ? (map['ultimoPrecio'] as int).toDouble() : (map['ultimoPrecio'] as double))
           : null,
@@ -41,14 +44,14 @@ class MaterialItem {
   MaterialItem copyWith({
     String? id,
     String? nombre,
-    String? unidad,
+    String? categoria,
     double? ultimoPrecio,
     bool nullPrice = false,
   }) {
     return MaterialItem(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
-      unidad: unidad ?? this.unidad,
+      categoria: categoria ?? this.categoria,
       ultimoPrecio: nullPrice ? null : (ultimoPrecio ?? this.ultimoPrecio),
     );
   }
@@ -74,23 +77,26 @@ class MaterialsProvider extends ChangeNotifier {
     return list;
   }
 
-  List<String> get unidades {
-    final unidadSet = <String>{};
+  List<String> get categorias {
+    final categoriaSet = <String>{MaterialItem.defaultCategory};
     for (final mat in materials) {
-      if (mat.unidad.trim().isNotEmpty) {
-        unidadSet.add(mat.unidad.trim());
-      }
+      categoriaSet.add(mat.categoria);
     }
-    final list = unidadSet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final list = categoriaSet.toList()
+      ..sort((a, b) {
+        if (a == MaterialItem.defaultCategory) return -1;
+        if (b == MaterialItem.defaultCategory) return 1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
     return list;
   }
 
-  Future<void> addMaterial(String nombre, String unidad, double? ultimoPrecio) async {
+  Future<void> addMaterial(String nombre, String categoria, double? ultimoPrecio) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final item = MaterialItem(
       id: id,
       nombre: nombre.trim(),
-      unidad: unidad.trim(),
+      categoria: categoria.trim().isEmpty ? MaterialItem.defaultCategory : categoria.trim(),
       ultimoPrecio: ultimoPrecio,
     );
     await _box.put(id, item.toMap());
@@ -100,11 +106,11 @@ class MaterialsProvider extends ChangeNotifier {
     await _syncMaterialToCloud(item);
   }
 
-  Future<void> updateMaterial(String id, String nombre, String unidad, double? ultimoPrecio) async {
+  Future<void> updateMaterial(String id, String nombre, String categoria, double? ultimoPrecio) async {
     final item = MaterialItem(
       id: id,
       nombre: nombre.trim(),
-      unidad: unidad.trim(),
+      categoria: categoria.trim().isEmpty ? MaterialItem.defaultCategory : categoria.trim(),
       ultimoPrecio: ultimoPrecio,
     );
     await _box.put(id, item.toMap());

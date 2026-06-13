@@ -367,7 +367,7 @@ class PdfGenerator {
                     ),
                     ...materials.map((item) {
                       final subtotal = item.price * item.quantity;
-                      final unitLabel = item.unidad != null ? " (${item.unidad})" : "";
+                      final unitLabel = item.unidad != null && item.unidad!.isNotEmpty ? " (${item.unidad})" : "";
                       return pw.TableRow(
                         children: [
                           pw.Padding(

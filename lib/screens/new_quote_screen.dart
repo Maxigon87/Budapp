@@ -43,7 +43,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   final _materialNameController = TextEditingController();
   final _materialPriceController = TextEditingController();
   final _materialNameFocusNode = FocusNode();
-  MaterialItem? _selectedMaterialFromAutocomplete;
+  String _selectedMaterialCategory = 'Todas';
 
   @override
   void initState() {
@@ -186,9 +186,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     }
 
     final price = double.tryParse(priceStr);
-    final unit = _selectedMaterialFromAutocomplete?.unidad ?? 'Unidad';
 
-    _showMaterialQuantityDialog(name, unit, price);
+    _showMaterialQuantityDialog(name, '', price);
   }
 
   void _showMaterialQuantityDialog(String name, String unidad, double? basePrice) {
@@ -219,8 +218,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       name,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                    const SizedBox(height: 4),
-                    Text('Unidad de medida: $unidad', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    if (unidad.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text('Unidad de medida: $unidad', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                    ],
                     if (basePrice != null) ...[
                       const SizedBox(height: 4),
                       Text('Último precio de catálogo: ${currencyFormat.format(basePrice)}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
@@ -229,7 +230,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                     TextFormField(
                       controller: quantityController,
                       decoration: InputDecoration(
-                        labelText: 'Cantidad ($unidad)',
+                        labelText: unidad.isNotEmpty ? 'Cantidad ($unidad)' : 'Cantidad',
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
@@ -308,11 +309,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           price: p,
                           quantity: q,
                           isMaterial: true,
-                          unidad: unidad,
+                          unidad: unidad.isNotEmpty ? unidad : null,
                         ));
                         _materialNameController.clear();
                         _materialPriceController.clear();
-                        _selectedMaterialFromAutocomplete = null;
                       });
                       FocusScope.of(context).unfocus();
                       Navigator.pop(context);
@@ -591,7 +591,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
           // Find by name case-insensitively
           final match = registeredMaterials.firstWhere(
             (m) => m.nombre.trim().toLowerCase() == item.name.trim().toLowerCase(),
-            orElse: () => MaterialItem(id: '', nombre: '', unidad: ''),
+            orElse: () => MaterialItem(id: '', nombre: '', categoria: ''),
           );
           if (match.id.isNotEmpty) {
             // Update its ultimoPrecio with the price used in this quote
@@ -633,7 +633,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     setState(() {
       _quoteItems.clear();
       _selectedServiceCategory = 'Todas';
-      _selectedMaterialFromAutocomplete = null;
+      _selectedMaterialCategory = 'Todas';
     });
   }
 
@@ -682,6 +682,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     final frequentServices = servicesProvider.services;
     final frequentMaterials = materialsProvider.materials;
     final serviceCategories = ['Todas', ...servicesProvider.categories];
+    final materialCategories = ['Todas', ...materialsProvider.categorias];
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -919,6 +920,29 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedMaterialCategory,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría de materiales frecuentes',
+                        prefixIcon: Icon(Icons.category_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: materialCategories
+                          .map(
+                            (category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedMaterialCategory = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     // Autocomplete material name
                     Autocomplete<MaterialItem>(
                       textEditingController: _materialNameController,
@@ -928,9 +952,12 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           return const Iterable<MaterialItem>.empty();
                         }
                         return frequentMaterials.where((option) {
-                          return option.nombre
+                          final matchesCategory = _selectedMaterialCategory == 'Todas' ||
+                              option.categoria == _selectedMaterialCategory;
+                          final matchesName = option.nombre
                               .toLowerCase()
                               .contains(textEditingValue.text.toLowerCase());
+                          return matchesCategory && matchesName;
                         });
                       },
                       displayStringForOption: (option) => option.nombre,
@@ -938,7 +965,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                         setState(() {
                           _materialNameController.text = option.nombre;
                           _materialPriceController.text = option.ultimoPrecio != null ? option.ultimoPrecio!.toStringAsFixed(0) : '';
-                          _selectedMaterialFromAutocomplete = option;
+                          _selectedMaterialCategory = option.categoria;
                         });
                       },
                       optionsViewBuilder: (context, onSelected, options) {
@@ -959,7 +986,7 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                   return ListTile(
                                     dense: true,
                                     title: Text(option.nombre),
-                                    subtitle: Text('Medida: ${option.unidad}'),
+                                    subtitle: Text('Categoría: ${option.categoria}'),
                                     trailing: Text(hasPrice ? currencyFormat.format(option.ultimoPrecio) : 'Sin precio'),
                                     onTap: () => onSelected(option),
                                   );

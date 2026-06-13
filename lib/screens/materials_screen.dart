@@ -34,7 +34,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
         .map(
           (m) => MaterialExcelRow(
             nombre: m.nombre,
-            unidad: m.unidad,
+            categoria: m.categoria,
             ultimoPrecio: m.ultimoPrecio,
           ),
         )
@@ -118,21 +118,21 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       final currentMaterials = provider.materials;
       final materialMap = <String, MaterialItem>{};
       for (final m in currentMaterials) {
-        final key = '${m.unidad.trim().toLowerCase()}_${m.nombre.trim().toLowerCase()}';
+        final key = '${m.categoria.trim().toLowerCase()}_${m.nombre.trim().toLowerCase()}';
         materialMap[key] = m;
       }
 
       final importedItems = <MaterialItem>[];
       for (var index = 0; index < result.rows.length; index++) {
         final row = result.rows[index];
-        final key = '${row.unidad.trim().toLowerCase()}_${row.nombre.trim().toLowerCase()}';
+        final key = '${row.categoria.trim().toLowerCase()}_${row.nombre.trim().toLowerCase()}';
         final existing = materialMap[key];
 
         if (existing != null) {
           final updated = MaterialItem(
             id: existing.id,
             nombre: existing.nombre,
-            unidad: existing.unidad,
+            categoria: existing.categoria,
             ultimoPrecio: row.ultimoPrecio ?? existing.ultimoPrecio,
           );
           importedItems.add(updated);
@@ -141,7 +141,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
           final newItem = MaterialItem(
             id: id,
             nombre: row.nombre,
-            unidad: row.unidad,
+            categoria: row.categoria,
             ultimoPrecio: row.ultimoPrecio,
           );
           importedItems.add(newItem);
@@ -264,10 +264,10 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     );
   }
 
-  Map<String, List<MaterialItem>> _groupMaterialsByUnidad(List<MaterialItem> materials) {
+  Map<String, List<MaterialItem>> _groupMaterialsByCategoria(List<MaterialItem> materials) {
     final grouped = <String, List<MaterialItem>>{};
     for (final mat in materials) {
-      final key = mat.unidad.isEmpty ? 'Sin unidad' : mat.unidad;
+      final key = mat.categoria.isEmpty ? 'Sin categoría' : mat.categoria;
       grouped.putIfAbsent(key, () => []).add(mat);
     }
     return grouped;
@@ -283,9 +283,9 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
 
     final filteredMaterials = materialsProvider.materials.where((m) {
       return m.nombre.toLowerCase().contains(normalizedQuery) ||
-          m.unidad.toLowerCase().contains(normalizedQuery);
+          m.categoria.toLowerCase().contains(normalizedQuery);
     }).toList();
-    final groupedMaterials = _groupMaterialsByUnidad(filteredMaterials);
+    final groupedMaterials = _groupMaterialsByCategoria(filteredMaterials);
 
     return Scaffold(
       appBar: AppBar(
@@ -317,7 +317,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Buscar material o unidad...',
+                hintText: 'Buscar material o categoría...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -410,7 +410,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 4),
-                                      Text('Medida: ${item.unidad}'),
+                                      Text('Categoría: ${item.categoria}'),
                                       const SizedBox(height: 2),
                                       Text(
                                         hasPrice
@@ -481,41 +481,41 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
   }
 }
 
-class _CreateUnitDialog extends StatefulWidget {
-  const _CreateUnitDialog();
+class _CreateCategoryDialog extends StatefulWidget {
+  const _CreateCategoryDialog();
 
   @override
-  State<_CreateUnitDialog> createState() => _CreateUnitDialogState();
+  State<_CreateCategoryDialog> createState() => _CreateCategoryDialogState();
 }
 
-class _CreateUnitDialogState extends State<_CreateUnitDialog> {
-  final _unitController = TextEditingController();
+class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
+  final _categoryController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _unitController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Nueva unidad de medida'),
+      title: const Text('Nueva categoría'),
       content: Form(
         key: _formKey,
         child: TextFormField(
-          controller: _unitController,
+          controller: _categoryController,
           decoration: const InputDecoration(
-            labelText: 'Unidad de medida',
-            hintText: 'Ej. Metro, Unidad, Litro',
+            labelText: 'Nombre de la categoría',
+            hintText: 'Ej. Electricidad, Ferretería',
             border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.straighten_outlined),
+            prefixIcon: Icon(Icons.category_outlined),
           ),
-          textCapitalization: TextCapitalization.sentences,
+          textCapitalization: TextCapitalization.words,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Por favor ingresa una unidad';
+              return 'Por favor ingresa una categoría';
             }
             return null;
           },
@@ -529,7 +529,7 @@ class _CreateUnitDialogState extends State<_CreateUnitDialog> {
         FilledButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              Navigator.pop(context, _unitController.text.trim());
+              Navigator.pop(context, _categoryController.text.trim());
             }
           },
           child: const Text('Agregar'),
@@ -552,10 +552,10 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
   late final TextEditingController _nombreController;
   late final TextEditingController _precioController;
   final _formKey = GlobalKey<FormState>();
-  late String _selectedUnidad;
-  late List<String> _availableUnidades;
+  late String _selectedCategoria;
+  late List<String> _availableCategorias;
 
-  static const String defaultUnidad = 'Unidad';
+  static const String defaultCategoria = MaterialItem.defaultCategory;
 
   @override
   void initState() {
@@ -565,9 +565,13 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
     _precioController = TextEditingController(
       text: widget.item?.ultimoPrecio != null ? widget.item!.ultimoPrecio!.toStringAsFixed(0) : '',
     );
-    _selectedUnidad = widget.item?.unidad ?? defaultUnidad;
-    _availableUnidades = <String>{...provider.unidades, _selectedUnidad, defaultUnidad, 'Metro'}.toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    _selectedCategoria = widget.item?.categoria ?? defaultCategoria;
+    _availableCategorias = <String>{...provider.categorias, _selectedCategoria, defaultCategoria}.toList()
+      ..sort((a, b) {
+        if (a == defaultCategoria) return -1;
+        if (b == defaultCategoria) return 1;
+        return a.toLowerCase().compareTo(b.toLowerCase());
+      });
   }
 
   @override
@@ -577,10 +581,10 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
     super.dispose();
   }
 
-  Future<String?> _showCreateUnitDialog() async {
+  Future<String?> _showCreateCategoryDialog() async {
     return showDialog<String>(
       context: context,
-      builder: (context) => const _CreateUnitDialog(),
+      builder: (context) => const _CreateCategoryDialog(),
     );
   }
 
@@ -602,22 +606,22 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedUnidad,
+                      value: _selectedCategoria,
                       decoration: const InputDecoration(
-                        labelText: 'Unidad de medida',
+                        labelText: 'Categoría',
                         border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.straighten_outlined),
+                        prefixIcon: Icon(Icons.category_outlined),
                       ),
-                      items: _availableUnidades.map(
-                        (u) => DropdownMenuItem(
-                          value: u,
-                          child: Text(u),
+                      items: _availableCategorias.map(
+                        (c) => DropdownMenuItem(
+                          value: c,
+                          child: Text(c),
                         ),
                       ).toList(),
                       onChanged: (value) {
                         if (value != null) {
                           setState(() {
-                            _selectedUnidad = value;
+                            _selectedCategoria = value;
                           });
                         }
                       },
@@ -626,16 +630,20 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
                   const SizedBox(width: 8),
                   IconButton(
                     icon: Icon(Icons.add_circle_outline, size: 28, color: accentColor),
-                    tooltip: 'Nueva unidad',
+                    tooltip: 'Nueva categoría',
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     constraints: const BoxConstraints(),
                     onPressed: () async {
-                      final newUnit = await _showCreateUnitDialog();
-                      if (newUnit == null || newUnit.isEmpty) return;
+                      final newCategory = await _showCreateCategoryDialog();
+                      if (newCategory == null || newCategory.isEmpty) return;
                       setState(() {
-                        _selectedUnidad = newUnit;
-                        _availableUnidades = <String>{..._availableUnidades, newUnit}.toList()
-                          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+                        _selectedCategoria = newCategory;
+                        _availableCategorias = <String>{..._availableCategorias, newCategory}.toList()
+                          ..sort((a, b) {
+                            if (a == defaultCategoria) return -1;
+                            if (b == defaultCategoria) return 1;
+                            return a.toLowerCase().compareTo(b.toLowerCase());
+                          });
                       });
                     },
                   ),
@@ -696,9 +704,9 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
               final price = priceText.isNotEmpty ? double.parse(priceText) : null;
 
               if (widget.item == null) {
-                provider.addMaterial(nombre, _selectedUnidad, price);
+                provider.addMaterial(nombre, _selectedCategoria, price);
               } else {
-                provider.updateMaterial(widget.item!.id, nombre, _selectedUnidad, price);
+                provider.updateMaterial(widget.item!.id, nombre, _selectedCategoria, price);
               }
 
               Navigator.pop(context);
