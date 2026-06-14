@@ -12,6 +12,7 @@ import '../providers/services_provider.dart';
 import '../providers/materials_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/auth_provider.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -38,15 +39,23 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     });
 
     try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final activeUserId = authProvider.user?.uid ?? 'guest';
+
       final companyBox = Hive.box('company_settings');
       final servicesBox = Hive.box('services');
       final quotesBox = Hive.box('quotes');
       final materialsBox = Hive.box('materials');
 
-      // 1. Gather company settings
+      // 1. Gather company settings (strip prefix)
       final Map<String, dynamic> companyData = {};
+      final prefix = '${activeUserId}_';
       for (var key in companyBox.keys) {
-        companyData[key.toString()] = companyBox.get(key);
+        final keyStr = key.toString();
+        if (keyStr.startsWith(prefix)) {
+          final cleanKey = keyStr.substring(prefix.length);
+          companyData[cleanKey] = companyBox.get(key);
+        }
       }
 
       // 2. Gather services
@@ -54,7 +63,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       for (var key in servicesBox.keys) {
         final val = servicesBox.get(key);
         if (val is Map) {
-          servicesData.add(Map<String, dynamic>.from(val));
+          final item = ServiceItem.fromMap(val);
+          if (item.userId == activeUserId && item.syncStatus != 'deleted') {
+            servicesData.add(Map<String, dynamic>.from(val));
+          }
         }
       }
 
@@ -63,7 +75,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       for (var key in materialsBox.keys) {
         final val = materialsBox.get(key);
         if (val is Map) {
-          materialsData.add(Map<String, dynamic>.from(val));
+          final item = MaterialItem.fromMap(val);
+          if (item.userId == activeUserId && item.syncStatus != 'deleted') {
+            materialsData.add(Map<String, dynamic>.from(val));
+          }
         }
       }
 
@@ -72,7 +87,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       for (var key in quotesBox.keys) {
         final val = quotesBox.get(key);
         if (val is Map) {
-          quotesData.add(Map<String, dynamic>.from(val));
+          final item = Quote.fromMap(val);
+          if (item.userId == activeUserId && item.syncStatus != 'deleted') {
+            quotesData.add(Map<String, dynamic>.from(val));
+          }
         }
       }
 
@@ -182,21 +200,29 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         throw Exception('El archivo no es una copia de seguridad válida de Budapp.');
       }
 
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final activeUserId = authProvider.user?.uid ?? 'guest';
+
       final companyBox = Hive.box('company_settings');
       final servicesBox = Hive.box('services');
       final quotesBox = Hive.box('quotes');
       final materialsBox = Hive.box('materials');
 
-      // Clear current boxes
-      await companyBox.clear();
-      await servicesBox.clear();
-      await quotesBox.clear();
-      await materialsBox.clear();
+      // Clear ONLY the active user's local data
+      final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
+      final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
+      final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
+      final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
+
+      await companyProvider.clearUserData(activeUserId);
+      await servicesProvider.clearUserData(activeUserId);
+      await materialsProvider.clearUserData(activeUserId);
+      await quotesProvider.clearUserData(activeUserId);
 
       // 1. Restore company settings
       final companyData = backup['company_settings'] as Map<String, dynamic>;
       for (var entry in companyData.entries) {
-        await companyBox.put(entry.key, entry.value);
+        await companyBox.put('${activeUserId}_${entry.key}', entry.value);
       }
 
       // 2. Restore services
@@ -205,6 +231,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         if (item is Map) {
           final serviceMap = Map<String, dynamic>.from(item);
           final id = serviceMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+          serviceMap['userId'] = activeUserId;
+          serviceMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
           await servicesBox.put(id, serviceMap);
         }
       }
@@ -216,6 +244,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           if (item is Map) {
             final materialMap = Map<String, dynamic>.from(item);
             final id = materialMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+            materialMap['userId'] = activeUserId;
+            materialMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
             await materialsBox.put(id, materialMap);
           }
         }
@@ -227,16 +257,18 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         if (item is Map) {
           final quoteMap = Map<String, dynamic>.from(item);
           final id = quoteMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+          quoteMap['userId'] = activeUserId;
+          quoteMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
           await quotesBox.put(id, quoteMap);
         }
       }
 
       // Refresh providers
       if (mounted) {
-        await Provider.of<CompanyProvider>(context, listen: false).refresh();
-        Provider.of<ServicesProvider>(context, listen: false).refresh();
-        Provider.of<MaterialsProvider>(context, listen: false).refresh();
-        Provider.of<QuotesProvider>(context, listen: false).refresh();
+        await companyProvider.refresh();
+        servicesProvider.refresh();
+        materialsProvider.refresh();
+        quotesProvider.refresh();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

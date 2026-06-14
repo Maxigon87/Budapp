@@ -32,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _authEmailController = TextEditingController();
   final _authPasswordController = TextEditingController();
   bool _isSignUpMode = false;
+  String? _lastUserId;
 
   @override
   void initState() {
@@ -43,6 +44,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _emailController = TextEditingController(text: company.email);
     _websiteController = TextEditingController(text: company.website);
     _logoPath = company.logoPath;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final company = Provider.of<CompanyProvider>(context);
+    final currentUid = authProvider.user?.uid ?? 'guest';
+    
+    if (_lastUserId != currentUid) {
+      _lastUserId = currentUid;
+      _nameController.text = company.name;
+      _addressController.text = company.address;
+      _phoneController.text = company.phone;
+      _emailController.text = company.email;
+      _websiteController.text = company.website;
+      _logoPath = company.logoPath;
+    }
   }
 
   @override
@@ -213,6 +232,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
     final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final uid = authProvider.user?.uid;
 
     showDialog(
       context: context,
@@ -230,6 +251,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       if (upload) {
+        if (uid != null) {
+          debugPrint("Transferring guest data to user $uid...");
+          await companyProvider.transferGuestDataToUser(uid);
+          await servicesProvider.transferGuestDataToUser(uid);
+          await materialsProvider.transferGuestDataToUser(uid);
+          await quotesProvider.transferGuestDataToUser(uid);
+        }
+
         debugPrint("Starting upload: Company Settings...");
         await companyProvider.uploadToCloud().timeout(const Duration(seconds: 10));
         
@@ -322,6 +351,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  void _handleSignOut() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final uid = authProvider.user?.uid;
+    if (uid == null) return;
+
+    final hasPending = Provider.of<CompanyProvider>(context, listen: false).hasPendingSync(uid) ||
+                     Provider.of<ServicesProvider>(context, listen: false).hasPendingSync(uid) ||
+                     Provider.of<MaterialsProvider>(context, listen: false).hasPendingSync(uid) ||
+                     Provider.of<QuotesProvider>(context, listen: false).hasPendingSync(uid);
+
+    if (hasPending) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 28),
+                SizedBox(width: 12),
+                Text('Cambios sin guardar', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: const Text(
+              'Tienes cambios pendientes que no se han sincronizado con la nube. Si cierras sesión ahora, se borrarán permanentemente del dispositivo y no se guardarán.\n\n¿Estás seguro de que deseas cerrar sesión y descartar estos cambios?',
+              style: TextStyle(fontSize: 14, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar', style: TextStyle(color: Color(0xFF6B7280))),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Salir y Descartar'),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirm != true) return;
+    }
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 20),
+            Text("Cerrando sesión y limpiando datos locales..."),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      await Provider.of<CompanyProvider>(context, listen: false).clearUserData(uid);
+      await Provider.of<ServicesProvider>(context, listen: false).clearUserData(uid);
+      await Provider.of<MaterialsProvider>(context, listen: false).clearUserData(uid);
+      await Provider.of<QuotesProvider>(context, listen: false).clearUserData(uid);
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+      }
+
+      await authProvider.signOut();
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cerrar sesión: $e'), backgroundColor: const Color(0xFFDC2626), behavior: SnackBarBehavior.floating),
+        );
+      }
+    }
   }
 
   @override
@@ -532,7 +641,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => authProvider.signOut(),
+                          onPressed: _handleSignOut,
                           child: const Text('Salir', style: TextStyle(color: Color(0xFFDC2626))),
                         ),
                       ],

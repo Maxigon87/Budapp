@@ -8,26 +8,50 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:path_provider/path_provider.dart';
+import 'dart:async';
 
 class CompanyProvider extends ChangeNotifier {
   final Box _box = Hive.box('company_settings');
+  Timer? _syncTimer;
+
+  CompanyProvider() {
+    _initLogoPath();
+    _startSyncTimer();
+  }
+
+  void _startSyncTimer() {
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      syncPendingToCloud();
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
 
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
   FirebaseFirestore? get _firestore => _isFirebaseAvailable ? FirebaseFirestore.instance : null;
   FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
-  String get name => _box.get('name', defaultValue: '') as String;
-  String get address => _box.get('address', defaultValue: '') as String;
-  String get phone => _box.get('phone', defaultValue: '') as String;
-  String get email => _box.get('email', defaultValue: '') as String;
-  String get website => _box.get('website', defaultValue: '') as String;
+  String get _currentUserId {
+    final auth = _auth;
+    if (auth != null && auth.currentUser != null) {
+      return auth.currentUser!.uid;
+    }
+    return 'guest';
+  }
+
+  String get name => _box.get('${_currentUserId}_name', defaultValue: '') as String;
+  String get address => _box.get('${_currentUserId}_address', defaultValue: '') as String;
+  String get phone => _box.get('${_currentUserId}_phone', defaultValue: '') as String;
+  String get email => _box.get('${_currentUserId}_email', defaultValue: '') as String;
+  String get website => _box.get('${_currentUserId}_website', defaultValue: '') as String;
 
   String? _resolvedLogoPath;
   String? get logoPath => _resolvedLogoPath;
-
-  CompanyProvider() {
-    _initLogoPath();
-  }
 
   Future<Uint8List> _resizeLogo(Uint8List bytes) async {
     try {
@@ -47,48 +71,53 @@ class CompanyProvider extends ChangeNotifier {
   }
 
   Future<void> _initLogoPath() async {
-    // Migration check: if there is an old 'logoPath' but no 'hasLogo'
-    final oldLogoPath = _box.get('logoPath') as String?;
-    final hasLogoKey = _box.containsKey('hasLogo');
+    final uid = _currentUserId;
     
-    if (oldLogoPath != null && !hasLogoKey) {
-      try {
-        final file = File(oldLogoPath);
-        if (file.existsSync()) {
-          final bytes = await file.readAsBytes();
-          final compressedBytes = await _resizeLogo(bytes);
-          final base64Logo = base64Encode(compressedBytes);
-          await _box.put('logoBase64', base64Logo);
-          await _box.put('hasLogo', true);
-        }
-      } catch (e) {
-        debugPrint("Failed to migrate old logo: $e");
-      }
-      await _box.delete('logoPath');
+    // Migration check: check if there are legacy global key values (e.g., name, address)
+    // and if we are in guest or user mode, migrate them to prefix key if prefix key doesn't exist
+    if (!_box.containsKey('${uid}_name') && _box.containsKey('name')) {
+      await _box.put('${uid}_name', _box.get('name'));
+      await _box.put('${uid}_address', _box.get('address'));
+      await _box.put('${uid}_phone', _box.get('phone'));
+      await _box.put('${uid}_email', _box.get('email'));
+      await _box.put('${uid}_website', _box.get('website'));
+      await _box.put('${uid}_hasLogo', _box.get('hasLogo', defaultValue: false));
+      await _box.put('${uid}_logoBase64', _box.get('logoBase64'));
+      
+      // Delete legacy global keys to keep database clean
+      await _box.delete('name');
+      await _box.delete('address');
+      await _box.delete('phone');
+      await _box.delete('email');
+      await _box.delete('website');
+      await _box.delete('hasLogo');
+      await _box.delete('logoBase64');
     }
 
-    final hasLogo = _box.get('hasLogo', defaultValue: false) as bool;
+    final hasLogo = _box.get('${uid}_hasLogo', defaultValue: false) as bool;
     if (hasLogo) {
       try {
         final directory = await getApplicationDocumentsDirectory();
-        _resolvedLogoPath = '${directory.path}/company_logo.png';
+        _resolvedLogoPath = '${directory.path}/${uid}_company_logo.png';
         
         if (!File(_resolvedLogoPath!).existsSync()) {
-          final base64Logo = _box.get('logoBase64') as String?;
+          final base64Logo = _box.get('${uid}_logoBase64') as String?;
           if (base64Logo != null && base64Logo.isNotEmpty) {
             final bytes = base64Decode(base64Logo);
             await File(_resolvedLogoPath!).writeAsBytes(bytes);
           } else {
             _resolvedLogoPath = null;
-            await _box.put('hasLogo', false);
+            await _box.put('${uid}_hasLogo', false);
           }
         }
       } catch (e) {
         debugPrint("Error initializing logo path: $e");
         _resolvedLogoPath = null;
       }
-      notifyListeners();
+    } else {
+      _resolvedLogoPath = null;
     }
+    notifyListeners();
   }
 
   Future<void> refresh() async {
@@ -107,16 +136,19 @@ class CompanyProvider extends ChangeNotifier {
     required String website,
     String? logoPath,
   }) async {
-    await _box.put('name', name);
-    await _box.put('address', address);
-    await _box.put('phone', phone);
-    await _box.put('email', email);
-    await _box.put('website', website);
+    final uid = _currentUserId;
+
+    await _box.put('${uid}_name', name);
+    await _box.put('${uid}_address', address);
+    await _box.put('${uid}_phone', phone);
+    await _box.put('${uid}_email', email);
+    await _box.put('${uid}_website', website);
+    await _box.put('${uid}_syncStatus', uid == 'guest' ? 'synced' : 'pending');
 
     if (logoPath != null && logoPath.isNotEmpty) {
       try {
         final directory = await getApplicationDocumentsDirectory();
-        final permanentPath = '${directory.path}/company_logo.png';
+        final permanentPath = '${directory.path}/${uid}_company_logo.png';
         
         if (logoPath != permanentPath) {
           final sourceFile = File(logoPath);
@@ -125,8 +157,8 @@ class CompanyProvider extends ChangeNotifier {
             final compressedBytes = await _resizeLogo(bytes);
             await File(permanentPath).writeAsBytes(compressedBytes);
             final base64Logo = base64Encode(compressedBytes);
-            await _box.put('logoBase64', base64Logo);
-            await _box.put('hasLogo', true);
+            await _box.put('${uid}_logoBase64', base64Logo);
+            await _box.put('${uid}_hasLogo', true);
             _resolvedLogoPath = permanentPath;
           }
         }
@@ -134,12 +166,12 @@ class CompanyProvider extends ChangeNotifier {
         debugPrint("Error saving logo file: $e");
       }
     } else {
-      await _box.put('hasLogo', false);
-      await _box.delete('logoBase64');
+      await _box.put('${uid}_hasLogo', false);
+      await _box.delete('${uid}_logoBase64');
       _resolvedLogoPath = null;
       try {
         final directory = await getApplicationDocumentsDirectory();
-        final file = File('${directory.path}/company_logo.png');
+        final file = File('${directory.path}/${uid}_company_logo.png');
         if (file.existsSync()) {
           await file.delete();
         }
@@ -150,17 +182,19 @@ class CompanyProvider extends ChangeNotifier {
 
     notifyListeners();
 
-    // Trigger dynamic cloud sync in background (do not await)
-    _syncCompanyToCloud();
+    // Trigger cloud sync
+    await _syncCompanyToCloud();
   }
 
   void clearLogo() async {
-    await _box.put('hasLogo', false);
-    await _box.delete('logoBase64');
+    final uid = _currentUserId;
+    await _box.put('${uid}_hasLogo', false);
+    await _box.delete('${uid}_logoBase64');
+    await _box.put('${uid}_syncStatus', uid == 'guest' ? 'synced' : 'pending');
     _resolvedLogoPath = null;
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/company_logo.png');
+      final file = File('${directory.path}/${uid}_company_logo.png');
       if (file.existsSync()) {
         await file.delete();
       }
@@ -169,8 +203,8 @@ class CompanyProvider extends ChangeNotifier {
     }
     notifyListeners();
     
-    // Trigger dynamic cloud sync in background (do not await)
-    _syncCompanyToCloud();
+    // Trigger cloud sync
+    await _syncCompanyToCloud();
   }
 
   // Cloud syncing helpers
@@ -182,7 +216,7 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        final logoBase64 = _box.get('logoBase64') as String?;
+        final logoBase64 = _box.get('${user.uid}_logoBase64') as String?;
         await firestore
             .collection('users')
             .doc(user.uid)
@@ -196,6 +230,8 @@ class CompanyProvider extends ChangeNotifier {
               'website': website,
               'logoBase64': logoBase64,
             });
+        
+        await _box.put('${user.uid}_syncStatus', 'synced');
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");
       }
@@ -222,19 +258,21 @@ class CompanyProvider extends ChangeNotifier {
       if (doc.exists) {
         final data = doc.data();
         if (data != null) {
-          await _box.put('name', data['name'] ?? '');
-          await _box.put('address', data['address'] ?? '');
-          await _box.put('phone', data['phone'] ?? '');
-          await _box.put('email', data['email'] ?? '');
-          await _box.put('website', data['website'] ?? '');
+          final uid = user.uid;
+          await _box.put('${uid}_name', data['name'] ?? '');
+          await _box.put('${uid}_address', data['address'] ?? '');
+          await _box.put('${uid}_phone', data['phone'] ?? '');
+          await _box.put('${uid}_email', data['email'] ?? '');
+          await _box.put('${uid}_website', data['website'] ?? '');
+          await _box.put('${uid}_syncStatus', 'synced');
           
           final logoBase64 = data['logoBase64'] as String?;
           if (logoBase64 != null && logoBase64.isNotEmpty) {
-            await _box.put('logoBase64', logoBase64);
-            await _box.put('hasLogo', true);
+            await _box.put('${uid}_logoBase64', logoBase64);
+            await _box.put('${uid}_hasLogo', true);
             
             final directory = await getApplicationDocumentsDirectory();
-            _resolvedLogoPath = '${directory.path}/company_logo.png';
+            _resolvedLogoPath = '${directory.path}/${uid}_company_logo.png';
             try {
               final bytes = base64Decode(logoBase64);
               await File(_resolvedLogoPath!).writeAsBytes(bytes);
@@ -242,12 +280,12 @@ class CompanyProvider extends ChangeNotifier {
               debugPrint("Error writing downloaded logo file: $e");
             }
           } else {
-            await _box.put('hasLogo', false);
-            await _box.delete('logoBase64');
+            await _box.put('${uid}_hasLogo', false);
+            await _box.delete('${uid}_logoBase64');
             _resolvedLogoPath = null;
             try {
               final directory = await getApplicationDocumentsDirectory();
-              final file = File('${directory.path}/company_logo.png');
+              final file = File('${directory.path}/${uid}_company_logo.png');
               if (file.existsSync()) {
                 await file.delete();
               }
@@ -273,7 +311,7 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        final logoBase64 = _box.get('logoBase64') as String?;
+        final logoBase64 = _box.get('${user.uid}_logoBase64') as String?;
         await firestore
             .collection('users')
             .doc(user.uid)
@@ -287,10 +325,89 @@ class CompanyProvider extends ChangeNotifier {
               'website': website,
               'logoBase64': logoBase64,
             });
+        
+        await _box.put('${user.uid}_syncStatus', 'synced');
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");
         rethrow;
       }
     }
+  }
+
+  Future<void> syncPendingToCloud() async {
+    final auth = _auth;
+    final firestore = _firestore;
+    if (auth == null || firestore == null) return;
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    final syncStatus = _box.get('${user.uid}_syncStatus', defaultValue: 'synced') as String;
+    if (syncStatus == 'pending') {
+      await _syncCompanyToCloud();
+    }
+  }
+
+  Future<void> syncWithCloud() async {
+    await syncPendingToCloud();
+    await syncFromCloud();
+  }
+
+  Future<void> clearUserData(String uid) async {
+    final prefix = '${uid}_';
+    final keysToDelete = [];
+    for (var key in _box.keys) {
+      if (key is String && key.startsWith(prefix)) {
+        keysToDelete.add(key);
+      }
+    }
+    for (var key in keysToDelete) {
+      await _box.delete(key);
+    }
+    
+    _resolvedLogoPath = null;
+
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/${uid}_company_logo.png');
+      if (file.existsSync()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint("Error deleting logo file on clear: $e");
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> transferGuestDataToUser(String newUid) async {
+    final guestPrefix = 'guest_';
+    final List<String> keysToCopy = [];
+    for (var key in _box.keys) {
+      if (key is String && key.startsWith(guestPrefix)) {
+        keysToCopy.add(key);
+      }
+    }
+    for (var key in keysToCopy) {
+      final cleanKey = key.substring(guestPrefix.length);
+      await _box.put('${newUid}_$cleanKey', _box.get(key));
+      await _box.delete(key);
+    }
+    await _box.put('${newUid}_syncStatus', 'pending');
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final guestLogo = File('${directory.path}/guest_company_logo.png');
+      if (guestLogo.existsSync()) {
+        await guestLogo.rename('${directory.path}/${newUid}_company_logo.png');
+      }
+    } catch (e) {
+      debugPrint("Error renaming logo during transfer: $e");
+    }
+    await _initLogoPath();
+    notifyListeners();
+  }
+
+  bool hasPendingSync(String uid) {
+    final syncStatus = _box.get('${uid}_syncStatus', defaultValue: 'synced') as String;
+    return syncStatus == 'pending';
   }
 }
