@@ -12,6 +12,7 @@ import '../providers/services_provider.dart';
 import '../providers/materials_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/update_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -32,6 +33,14 @@ class MainScreenState extends State<MainScreen> {
     const MaterialsScreen(),
     const SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService().checkAndShowUpdateDialog(context);
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -69,10 +78,14 @@ class MainScreenState extends State<MainScreen> {
 
   void _autoSyncFromCloud() async {
     try {
-      final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
-      final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
-      final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
-      final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
+      final companyProvider =
+          Provider.of<CompanyProvider>(context, listen: false);
+      final servicesProvider =
+          Provider.of<ServicesProvider>(context, listen: false);
+      final materialsProvider =
+          Provider.of<MaterialsProvider>(context, listen: false);
+      final quotesProvider =
+          Provider.of<QuotesProvider>(context, listen: false);
 
       await Future.wait([
         companyProvider.syncFromCloud(),
@@ -153,17 +166,20 @@ class MainScreenState extends State<MainScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const NewQuoteScreen()),
                 );
               },
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
                 'Nuevo Presupuesto',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
               ),
               backgroundColor: accentColor,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             )
           : null,
     );

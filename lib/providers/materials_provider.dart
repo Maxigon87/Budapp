@@ -41,9 +41,12 @@ class MaterialItem {
     return MaterialItem(
       id: (map['id'] ?? '') as String,
       nombre: (map['nombre'] ?? '') as String,
-      categoria: rawCategory.trim().isEmpty ? defaultCategory : rawCategory.trim(),
+      categoria:
+          rawCategory.trim().isEmpty ? defaultCategory : rawCategory.trim(),
       ultimoPrecio: map['ultimoPrecio'] != null
-          ? (map['ultimoPrecio'] is int ? (map['ultimoPrecio'] as int).toDouble() : (map['ultimoPrecio'] as double))
+          ? (map['ultimoPrecio'] is int
+              ? (map['ultimoPrecio'] as int).toDouble()
+              : (map['ultimoPrecio'] as double))
           : null,
       userId: (map['userId'] ?? 'guest') as String,
       syncStatus: (map['syncStatus'] ?? 'synced') as String,
@@ -92,8 +95,10 @@ class MaterialsProvider extends ChangeNotifier {
   }
 
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
-  FirebaseFirestore? get _firestore => _isFirebaseAvailable ? FirebaseFirestore.instance : null;
-  FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
+  FirebaseFirestore? get _firestore =>
+      _isFirebaseAvailable ? FirebaseFirestore.instance : null;
+  FirebaseAuth? get _auth =>
+      _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
   String get _currentUserId {
     final auth = _auth;
@@ -116,7 +121,8 @@ class MaterialsProvider extends ChangeNotifier {
       }
     }
     // Sort materials alphabetically by name (case-insensitive)
-    list.sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+    list.sort(
+        (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
     return list;
   }
 
@@ -134,13 +140,16 @@ class MaterialsProvider extends ChangeNotifier {
     return list;
   }
 
-  Future<void> addMaterial(String nombre, String categoria, double? ultimoPrecio) async {
+  Future<void> addMaterial(
+      String nombre, String categoria, double? ultimoPrecio) async {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
     final currentUid = _currentUserId;
     final item = MaterialItem(
       id: id,
       nombre: nombre.trim(),
-      categoria: categoria.trim().isEmpty ? MaterialItem.defaultCategory : categoria.trim(),
+      categoria: categoria.trim().isEmpty
+          ? MaterialItem.defaultCategory
+          : categoria.trim(),
       ultimoPrecio: ultimoPrecio,
       userId: currentUid,
       syncStatus: currentUid == 'guest' ? 'synced' : 'pending',
@@ -152,12 +161,15 @@ class MaterialsProvider extends ChangeNotifier {
     await _syncMaterialToCloud(item);
   }
 
-  Future<void> updateMaterial(String id, String nombre, String categoria, double? ultimoPrecio) async {
+  Future<void> updateMaterial(
+      String id, String nombre, String categoria, double? ultimoPrecio) async {
     final currentUid = _currentUserId;
     final item = MaterialItem(
       id: id,
       nombre: nombre.trim(),
-      categoria: categoria.trim().isEmpty ? MaterialItem.defaultCategory : categoria.trim(),
+      categoria: categoria.trim().isEmpty
+          ? MaterialItem.defaultCategory
+          : categoria.trim(),
       ultimoPrecio: ultimoPrecio,
       userId: currentUid,
       syncStatus: currentUid == 'guest' ? 'synced' : 'pending',
@@ -190,7 +202,8 @@ class MaterialsProvider extends ChangeNotifier {
 
     // Firebase Sync in parallel
     if (currentUid != 'guest') {
-      await Future.wait(processedItems.map((item) => _syncMaterialToCloud(item)));
+      await Future.wait(
+          processedItems.map((item) => _syncMaterialToCloud(item)));
     }
   }
 
@@ -322,7 +335,9 @@ class MaterialsProvider extends ChangeNotifier {
 
       for (var i = 0; i < allMaterials.length; i += batchSize) {
         final batch = firestore.batch();
-        final end = (i + batchSize < allMaterials.length) ? i + batchSize : allMaterials.length;
+        final end = (i + batchSize < allMaterials.length)
+            ? i + batchSize
+            : allMaterials.length;
         final chunk = allMaterials.sublist(i, end);
 
         for (var item in chunk) {
@@ -448,7 +463,8 @@ class MaterialsProvider extends ChangeNotifier {
       final value = _box.get(key);
       if (value is Map) {
         final item = MaterialItem.fromMap(value);
-        if (item.userId == uid && (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
+        if (item.userId == uid &&
+            (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
           return true;
         }
       }

@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
-  FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
+  FirebaseAuth? get _auth =>
+      _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
   User? _user;
   bool _isLoading = false;
@@ -60,7 +61,8 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await auth.createUserWithEmailAndPassword(email: email, password: password);
+      await auth.createUserWithEmailAndPassword(
+          email: email, password: password);
       _isLoading = false;
       notifyListeners();
       return null; // Success

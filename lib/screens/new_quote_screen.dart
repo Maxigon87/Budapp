@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/materials_provider.dart';
@@ -18,20 +19,20 @@ class NewQuoteScreen extends StatefulWidget {
 
 class _NewQuoteScreenState extends State<NewQuoteScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Client Info Controllers
   final _clientNameController = TextEditingController();
   final _clientPhoneController = TextEditingController();
   final _clientAddressController = TextEditingController();
   final _observationsController = TextEditingController();
-  
+
   // Custom metadata
   late String _quoteNumber;
   late DateTime _quoteDate;
-  
+
   // Selected items in current quote
   final List<QuoteItem> _quoteItems = [];
-  
+
   // Add item form controllers
   final _serviceNameController = TextEditingController();
   final _servicePriceController = TextEditingController();
@@ -70,15 +71,20 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   }
 
   double get _totalAmount {
-    return _quoteItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    return _quoteItems.fold(
+        0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   double get _servicesTotal {
-    return _quoteItems.where((i) => !i.isMaterial).fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    return _quoteItems
+        .where((i) => !i.isMaterial)
+        .fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   double get _materialsTotal {
-    return _quoteItems.where((i) => i.isMaterial).fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+    return _quoteItems
+        .where((i) => i.isMaterial)
+        .fold(0.0, (sum, item) => sum + (item.price * item.quantity));
   }
 
   void _addServiceItem() {
@@ -87,7 +93,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa el nombre del servicio'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+            content: Text('Ingresa el nombre del servicio'),
+            behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -95,7 +103,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     final price = double.tryParse(priceStr) ?? 0.0;
     if (price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa un precio válido mayor a 0'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+            content: Text('Ingresa un precio válido mayor a 0'),
+            behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -120,7 +130,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 8),
                 Text('Precio unitario: \$${price.toStringAsFixed(0)}'),
@@ -157,7 +168,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                 if (dialogFormKey.currentState!.validate()) {
                   final qty = int.parse(quantityController.text);
                   setState(() {
-                    _quoteItems.add(QuoteItem(name: name, price: price, quantity: qty, isMaterial: false));
+                    _quoteItems.add(QuoteItem(
+                        name: name,
+                        price: price,
+                        quantity: qty,
+                        isMaterial: false));
                     _serviceNameController.clear();
                     _servicePriceController.clear();
                     _selectedServiceCategory = 'Todas';
@@ -180,7 +195,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa el nombre del material'), behavior: SnackBarBehavior.floating),
+        const SnackBar(
+            content: Text('Ingresa el nombre del material'),
+            behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -190,15 +207,18 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _showMaterialQuantityDialog(name, '', price);
   }
 
-  void _showMaterialQuantityDialog(String name, String unidad, double? basePrice) {
+  void _showMaterialQuantityDialog(
+      String name, String unidad, double? basePrice) {
     final quantityController = TextEditingController(text: '1');
-    final priceController = TextEditingController(text: basePrice != null ? basePrice.toStringAsFixed(0) : '');
+    final priceController = TextEditingController(
+        text: basePrice != null ? basePrice.toStringAsFixed(0) : '');
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (context) {
-        final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+        final currencyFormat = NumberFormat.currency(
+            locale: 'es_AR', symbol: '\$', decimalDigits: 0);
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             double qty = double.tryParse(quantityController.text) ?? 1.0;
@@ -206,7 +226,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             double total = qty * prc;
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: const Text('Cantidad y Precio de Material'),
               content: Form(
                 key: dialogFormKey,
@@ -216,21 +237,29 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     if (unidad.isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text('Unidad de medida: $unidad', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text('Unidad de medida: $unidad',
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.grey)),
                     ],
                     if (basePrice != null) ...[
                       const SizedBox(height: 4),
-                      Text('Último precio de catálogo: ${currencyFormat.format(basePrice)}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text(
+                          'Último precio de catálogo: ${currencyFormat.format(basePrice)}',
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.grey)),
                     ],
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: quantityController,
                       decoration: InputDecoration(
-                        labelText: unidad.isNotEmpty ? 'Cantidad ($unidad)' : 'Cantidad',
+                        labelText: unidad.isNotEmpty
+                            ? 'Cantidad ($unidad)'
+                            : 'Cantidad',
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
@@ -278,7 +307,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       children: [
                         const Text(
                           'TOTAL:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         Text(
                           currencyFormat.format(total),
@@ -329,14 +359,17 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   }
 
   void _showEditMaterialDialog(int index, QuoteItem item) {
-    final quantityController = TextEditingController(text: item.quantity.toString());
-    final priceController = TextEditingController(text: item.price.toStringAsFixed(0));
+    final quantityController =
+        TextEditingController(text: item.quantity.toString());
+    final priceController =
+        TextEditingController(text: item.price.toStringAsFixed(0));
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
       builder: (context) {
-        final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+        final currencyFormat = NumberFormat.currency(
+            locale: 'es_AR', symbol: '\$', decimalDigits: 0);
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             double qty = double.tryParse(quantityController.text) ?? 1.0;
@@ -344,7 +377,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             double total = qty * prc;
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: const Text('Editar Material'),
               content: Form(
                 key: dialogFormKey,
@@ -354,17 +388,21 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   children: [
                     Text(
                       item.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     if (item.unidad != null) ...[
                       const SizedBox(height: 4),
-                      Text('Unidad de medida: ${item.unidad}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text('Unidad de medida: ${item.unidad}',
+                          style: const TextStyle(
+                              fontSize: 13, color: Colors.grey)),
                     ],
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: quantityController,
                       decoration: InputDecoration(
-                        labelText: 'Cantidad${item.unidad != null ? " (${item.unidad})" : ""}',
+                        labelText:
+                            'Cantidad${item.unidad != null ? " (${item.unidad})" : ""}',
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
@@ -412,7 +450,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       children: [
                         const Text(
                           'TOTAL:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         Text(
                           currencyFormat.format(total),
@@ -468,8 +507,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   void _editServiceItem(int index) {
     final item = _quoteItems[index];
     final editNameController = TextEditingController(text: item.name);
-    final editPriceController = TextEditingController(text: item.price.toStringAsFixed(0));
-    final editQuantityController = TextEditingController(text: item.quantity.toString());
+    final editPriceController =
+        TextEditingController(text: item.price.toStringAsFixed(0));
+    final editQuantityController =
+        TextEditingController(text: item.quantity.toString());
     final dialogFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -484,8 +525,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
               children: [
                 TextFormField(
                   controller: editNameController,
-                  decoration: const InputDecoration(labelText: 'Nombre del Servicio'),
-                  validator: (value) => value == null || value.trim().isEmpty ? 'Ingresa un nombre' : null,
+                  decoration:
+                      const InputDecoration(labelText: 'Nombre del Servicio'),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Ingresa un nombre'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -493,8 +537,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   decoration: const InputDecoration(labelText: 'Precio (\$)'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Ingresa un precio';
-                    if (double.tryParse(value) == null || double.parse(value) <= 0) return 'Precio inválido';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Ingresa un precio';
+                    if (double.tryParse(value) == null ||
+                        double.parse(value) <= 0) return 'Precio inválido';
                     return null;
                   },
                 ),
@@ -504,7 +550,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   decoration: const InputDecoration(labelText: 'Cantidad'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Ingresa la cantidad';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Ingresa la cantidad';
                     final qty = int.tryParse(value);
                     if (qty == null || qty <= 0) return 'Cantidad inválida';
                     return null;
@@ -550,7 +597,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     if (_quoteItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, agrega al menos un servicio o material al presupuesto'),
+          content: Text(
+              'Por favor, agrega al menos un servicio o material al presupuesto'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -559,7 +607,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
 
     // Capture providers before any async/await gap
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
-    final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
+    final materialsProvider =
+        Provider.of<MaterialsProvider>(context, listen: false);
 
     setState(() {
       _isSaving = true;
@@ -590,7 +639,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
         if (item.isMaterial) {
           // Find by name case-insensitively
           final match = registeredMaterials.firstWhere(
-            (m) => m.nombre.trim().toLowerCase() == item.name.trim().toLowerCase(),
+            (m) =>
+                m.nombre.trim().toLowerCase() == item.name.trim().toLowerCase(),
             orElse: () => MaterialItem(id: '', nombre: '', categoria: ''),
           );
           if (match.id.isNotEmpty) {
@@ -621,6 +671,61 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     }
   }
 
+  Future<void> _selectContact() async {
+    try {
+      final permission =
+          await FlutterContacts.requestPermission(readonly: true);
+      if (!permission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permiso para acceder a los contactos denegado.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      final contact = await FlutterContacts.openExternalPick();
+      if (contact == null) return;
+
+      final fullContact = await FlutterContacts.getContact(contact.id);
+      if (fullContact == null) return;
+
+      String name = fullContact.displayName;
+      String phone = '';
+      String address = '';
+
+      if (fullContact.phones.isNotEmpty) {
+        phone = fullContact.phones.first.number.trim();
+      }
+
+      if (fullContact.addresses.isNotEmpty) {
+        address = fullContact.addresses.first.address.trim();
+      }
+
+      setState(() {
+        _clientNameController.text = name;
+        if (phone.isNotEmpty) {
+          _clientPhoneController.text = phone;
+        }
+        if (address.isNotEmpty) {
+          _clientAddressController.text = address;
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al importar contacto: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _clearFields() {
     _clientNameController.clear();
     _clientPhoneController.clear();
@@ -643,10 +748,12 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.check_circle_outline, color: Color(0xFF16A34A), size: 28),
+              Icon(Icons.check_circle_outline,
+                  color: Color(0xFF16A34A), size: 28),
               SizedBox(width: 12),
               Text('¡Guardado!', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
@@ -659,9 +766,11 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1E3A8A),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('OK',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -683,7 +792,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     final frequentMaterials = materialsProvider.materials;
     final serviceCategories = ['Todas', ...servicesProvider.categories];
     final materialCategories = ['Todas', ...materialsProvider.categorias];
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
@@ -698,7 +808,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Quote metadata summary card
             Card(
               elevation: 0,
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
+              color:
+                  Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Row(
@@ -706,11 +817,13 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   children: [
                     Text(
                       "N° Presupuesto: $_quoteNumber",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                     Text(
                       "Fecha: ${dateFormat.format(_quoteDate)}",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15),
                     ),
                   ],
                 ),
@@ -719,9 +832,25 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             const SizedBox(height: 16),
 
             // Client Card
-            Text(
-              "Datos del Cliente",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Datos del Cliente",
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  onPressed: _selectContact,
+                  icon: const Icon(Icons.contact_phone_outlined),
+                  label: const Text('Importar Contacto'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Card(
@@ -781,7 +910,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Services Add Card
             Text(
               "Agregar Servicio / Concepto",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Card(
@@ -821,8 +953,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           return const Iterable<ServiceItem>.empty();
                         }
                         return frequentServices.where((option) {
-                          final matchesCategory = _selectedServiceCategory == 'Todas' ||
-                              option.category == _selectedServiceCategory;
+                          final matchesCategory =
+                              _selectedServiceCategory == 'Todas' ||
+                                  option.category == _selectedServiceCategory;
                           final matchesName = option.name
                               .toLowerCase()
                               .contains(textEditingValue.text.toLowerCase());
@@ -833,7 +966,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       onSelected: (option) {
                         setState(() {
                           _serviceNameController.text = option.name;
-                          _servicePriceController.text = option.price.toStringAsFixed(0);
+                          _servicePriceController.text =
+                              option.price.toStringAsFixed(0);
                           _selectedServiceCategory = option.category;
                         });
                       },
@@ -844,7 +978,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             elevation: 4,
                             borderRadius: BorderRadius.circular(8),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
+                              constraints: const BoxConstraints(
+                                  maxHeight: 240, maxWidth: 420),
                               child: ListView.builder(
                                 padding: EdgeInsets.zero,
                                 shrinkWrap: true,
@@ -855,7 +990,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                     dense: true,
                                     title: Text(option.name),
                                     subtitle: Text(option.category),
-                                    trailing: Text(currencyFormat.format(option.price)),
+                                    trailing: Text(
+                                        currencyFormat.format(option.price)),
                                     onTap: () => onSelected(option),
                                   );
                                 },
@@ -864,7 +1000,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           ),
                         );
                       },
-                      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                      fieldViewBuilder: (context, textEditingController,
+                          focusNode, onFieldSubmitted) {
                         return TextFormField(
                           controller: textEditingController,
                           focusNode: focusNode,
@@ -897,7 +1034,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           icon: const Icon(Icons.add),
                           label: const Text('Añadir'),
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
                             backgroundColor: accentColor,
                           ),
                         ),
@@ -912,7 +1050,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Materials Add Card
             Text(
               "Agregar Material",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Card(
@@ -952,8 +1093,9 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           return const Iterable<MaterialItem>.empty();
                         }
                         return frequentMaterials.where((option) {
-                          final matchesCategory = _selectedMaterialCategory == 'Todas' ||
-                              option.categoria == _selectedMaterialCategory;
+                          final matchesCategory =
+                              _selectedMaterialCategory == 'Todas' ||
+                                  option.categoria == _selectedMaterialCategory;
                           final matchesName = option.nombre
                               .toLowerCase()
                               .contains(textEditingValue.text.toLowerCase());
@@ -964,7 +1106,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                       onSelected: (option) {
                         setState(() {
                           _materialNameController.text = option.nombre;
-                          _materialPriceController.text = option.ultimoPrecio != null ? option.ultimoPrecio!.toStringAsFixed(0) : '';
+                          _materialPriceController.text =
+                              option.ultimoPrecio != null
+                                  ? option.ultimoPrecio!.toStringAsFixed(0)
+                                  : '';
                           _selectedMaterialCategory = option.categoria;
                         });
                       },
@@ -975,7 +1120,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             elevation: 4,
                             borderRadius: BorderRadius.circular(8),
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 420),
+                              constraints: const BoxConstraints(
+                                  maxHeight: 240, maxWidth: 420),
                               child: ListView.builder(
                                 padding: EdgeInsets.zero,
                                 shrinkWrap: true,
@@ -986,8 +1132,12 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                   return ListTile(
                                     dense: true,
                                     title: Text(option.nombre),
-                                    subtitle: Text('Categoría: ${option.categoria}'),
-                                    trailing: Text(hasPrice ? currencyFormat.format(option.ultimoPrecio) : 'Sin precio'),
+                                    subtitle:
+                                        Text('Categoría: ${option.categoria}'),
+                                    trailing: Text(hasPrice
+                                        ? currencyFormat
+                                            .format(option.ultimoPrecio)
+                                        : 'Sin precio'),
                                     onTap: () => onSelected(option),
                                   );
                                 },
@@ -996,7 +1146,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           ),
                         );
                       },
-                      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                      fieldViewBuilder: (context, textEditingController,
+                          focusNode, onFieldSubmitted) {
                         return TextFormField(
                           controller: textEditingController,
                           focusNode: focusNode,
@@ -1029,7 +1180,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           icon: const Icon(Icons.add),
                           label: const Text('Añadir'),
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 16),
                             backgroundColor: accentColor,
                           ),
                         ),
@@ -1044,7 +1196,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Services Added Card
             Text(
               "Servicios Añadidos",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Card(
@@ -1065,14 +1220,18 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _quoteItems.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final item = _quoteItems[index];
-                            if (item.isMaterial) return const SizedBox.shrink(); // hide materials here
+                            if (item.isMaterial)
+                              return const SizedBox
+                                  .shrink(); // hide materials here
                             return ListTile(
                               title: Text(
                                 item.name,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,7 +1239,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     "Cantidad: ${item.quantity}  •  ${currencyFormat.format(item.price)} c/u",
-                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey[600]),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -1088,7 +1248,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 ],
@@ -1097,12 +1258,14 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 20),
                                     onPressed: () => _editServiceItem(index),
                                     tooltip: 'Editar',
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 20, color: Colors.red),
                                     onPressed: () => _removeServiceItem(index),
                                     tooltip: 'Eliminar',
                                   ),
@@ -1119,7 +1282,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             children: [
                               const Text(
                                 "SUBTOTAL SERVICIOS",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.grey),
                               ),
                               Text(
                                 currencyFormat.format(_servicesTotal),
@@ -1140,7 +1306,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Materials Added Card
             Text(
               "Materiales Añadidos",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Card(
@@ -1161,14 +1330,18 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _quoteItems.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final item = _quoteItems[index];
-                            if (!item.isMaterial) return const SizedBox.shrink(); // hide services here
+                            if (!item.isMaterial)
+                              return const SizedBox
+                                  .shrink(); // hide services here
                             return ListTile(
                               title: Text(
                                 item.name,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1176,7 +1349,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     "Cantidad: ${item.quantity} ${item.unidad ?? 'Unidad'}  •  ${currencyFormat.format(item.price)} c/u",
-                                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey[600]),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -1184,7 +1358,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 ],
@@ -1193,12 +1368,15 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 20),
-                                    onPressed: () => _showEditMaterialDialog(index, item),
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 20),
+                                    onPressed: () =>
+                                        _showEditMaterialDialog(index, item),
                                     tooltip: 'Editar',
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 20, color: Colors.red),
                                     onPressed: () => _removeServiceItem(index),
                                     tooltip: 'Eliminar',
                                   ),
@@ -1215,7 +1393,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             children: [
                               const Text(
                                 "SUBTOTAL MATERIALES",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.grey),
                               ),
                               Text(
                                 currencyFormat.format(_materialsTotal),
@@ -1235,10 +1416,16 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
 
             // Total General Card
             Card(
-              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.15),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withOpacity(0.15),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), width: 1.5),
+                side: BorderSide(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    width: 1.5),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -1270,13 +1457,17 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             // Observations
             Text(
               "Observaciones (opcional)",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _observationsController,
               decoration: const InputDecoration(
-                hintText: 'Ej. Forma de pago: Transferencia. Validez: 15 días. Garantía por 3 meses...',
+                hintText:
+                    'Ej. Forma de pago: Transferencia. Validez: 15 días. Garantía por 3 meses...',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -1323,7 +1514,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             final quote = await _saveQuoteToDb();
                             if (quote != null && mounted) {
                               // Generate PDF Bytes
-                              final pdfBytes = await PdfGenerator.generateQuotePdf(
+                              final pdfBytes =
+                                  await PdfGenerator.generateQuotePdf(
                                 company: company,
                                 quote: quote,
                               );
@@ -1348,7 +1540,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text('Guardar y Compartir'),

@@ -148,7 +148,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
   Future<void> _importBackup() async {
     if (_isImporting) return;
 
-    final selectedFile = await openFile(acceptedTypeGroups: const [_jsonTypeGroup]);
+    final selectedFile =
+        await openFile(acceptedTypeGroups: const [_jsonTypeGroup]);
     if (selectedFile == null) return;
 
     // Ask user for confirmation
@@ -156,12 +157,15 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 28),
+              Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFD97706), size: 28),
               SizedBox(width: 12),
-              Text('¿Importar respaldo?', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('¿Importar respaldo?',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           content: const Text(
@@ -171,10 +175,12 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar', style: TextStyle(color: Color(0xFF6B7280))),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Color(0xFF6B7280))),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+              style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626)),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Sí, Reemplazar'),
             ),
@@ -191,13 +197,15 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 
     try {
       final fileContent = await selectedFile.readAsString();
-      final Map<String, dynamic> backup = jsonDecode(fileContent) as Map<String, dynamic>;
+      final Map<String, dynamic> backup =
+          jsonDecode(fileContent) as Map<String, dynamic>;
 
       // Validate structure
       if (!backup.containsKey('company_settings') ||
           !backup.containsKey('services') ||
           !backup.containsKey('quotes')) {
-        throw Exception('El archivo no es una copia de seguridad válida de Budapp.');
+        throw Exception(
+            'El archivo no es una copia de seguridad válida de Budapp.');
       }
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -209,10 +217,14 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final materialsBox = Hive.box('materials');
 
       // Clear ONLY the active user's local data
-      final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
-      final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
-      final materialsProvider = Provider.of<MaterialsProvider>(context, listen: false);
-      final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
+      final companyProvider =
+          Provider.of<CompanyProvider>(context, listen: false);
+      final servicesProvider =
+          Provider.of<ServicesProvider>(context, listen: false);
+      final materialsProvider =
+          Provider.of<MaterialsProvider>(context, listen: false);
+      final quotesProvider =
+          Provider.of<QuotesProvider>(context, listen: false);
 
       await companyProvider.clearUserData(activeUserId);
       await servicesProvider.clearUserData(activeUserId);
@@ -230,9 +242,11 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       for (var item in servicesData) {
         if (item is Map) {
           final serviceMap = Map<String, dynamic>.from(item);
-          final id = serviceMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+          final id = serviceMap['id'] ??
+              DateTime.now().millisecondsSinceEpoch.toString();
           serviceMap['userId'] = activeUserId;
-          serviceMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
+          serviceMap['syncStatus'] =
+              activeUserId == 'guest' ? 'synced' : 'pending';
           await servicesBox.put(id, serviceMap);
         }
       }
@@ -243,9 +257,11 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         for (var item in materialsData) {
           if (item is Map) {
             final materialMap = Map<String, dynamic>.from(item);
-            final id = materialMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+            final id = materialMap['id'] ??
+                DateTime.now().millisecondsSinceEpoch.toString();
             materialMap['userId'] = activeUserId;
-            materialMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
+            materialMap['syncStatus'] =
+                activeUserId == 'guest' ? 'synced' : 'pending';
             await materialsBox.put(id, materialMap);
           }
         }
@@ -256,9 +272,11 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       for (var item in quotesData) {
         if (item is Map) {
           final quoteMap = Map<String, dynamic>.from(item);
-          final id = quoteMap['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
+          final id = quoteMap['id'] ??
+              DateTime.now().millisecondsSinceEpoch.toString();
           quoteMap['userId'] = activeUserId;
-          quoteMap['syncStatus'] = activeUserId == 'guest' ? 'synced' : 'pending';
+          quoteMap['syncStatus'] =
+              activeUserId == 'guest' ? 'synced' : 'pending';
           await quotesBox.put(id, quoteMap);
         }
       }
@@ -326,7 +344,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Respaldo Local Completo',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -335,7 +354,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.4,
-                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF4B5563),
+                      color: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF4B5563),
                     ),
                   ),
                 ],
@@ -347,7 +368,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           // Actions list
           Text(
             'Acciones locales',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -375,12 +397,14 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         children: [
                           const Text(
                             'Crear y Exportar Respaldo',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Genera un archivo .json con toda tu información para guardar o compartir.',
-                            style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+                            style: TextStyle(
+                                fontSize: 12, color: theme.colorScheme.outline),
                           ),
                         ],
                       ),
@@ -415,7 +439,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         color: const Color(0xFF16A34A).withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.download_outlined, color: Color(0xFF16A34A)),
+                      child: const Icon(Icons.download_outlined,
+                          color: Color(0xFF16A34A)),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -424,12 +449,14 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         children: [
                           const Text(
                             'Restaurar desde Respaldo',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Selecciona un archivo .json de respaldo para recuperar tus datos.',
-                            style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+                            style: TextStyle(
+                                fontSize: 12, color: theme.colorScheme.outline),
                           ),
                         ],
                       ),

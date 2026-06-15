@@ -35,14 +35,20 @@ class IncomeChartPainter extends CustomPainter {
     // A beautiful smooth bezier curve mimicking financial growth
     path.moveTo(0, size.height * 0.75);
     path.cubicTo(
-      size.width * 0.25, size.height * 0.85,
-      size.width * 0.45, size.height * 0.35,
-      size.width * 0.7, size.height * 0.55,
+      size.width * 0.25,
+      size.height * 0.85,
+      size.width * 0.45,
+      size.height * 0.35,
+      size.width * 0.7,
+      size.height * 0.55,
     );
     path.cubicTo(
-      size.width * 0.85, size.height * 0.65,
-      size.width * 0.95, size.height * 0.2,
-      size.width, size.height * 0.25,
+      size.width * 0.85,
+      size.height * 0.65,
+      size.width * 0.95,
+      size.height * 0.2,
+      size.width,
+      size.height * 0.25,
     );
 
     final fillPath = Path.from(path)
@@ -127,22 +133,27 @@ class HomeScreen extends StatelessWidget {
 
     // Statistics calculations
     final totalQuotesCount = allQuotes.length;
-    final acceptedQuotes = allQuotes.where((q) => q.status == 'Aceptado').toList();
-    final pendingQuotes = allQuotes.where((q) => q.status == 'Pendiente').toList();
-    
+    final acceptedQuotes =
+        allQuotes.where((q) => q.status == 'Aceptado').toList();
+    final pendingQuotes =
+        allQuotes.where((q) => q.status == 'Pendiente').toList();
+
     double totalEarnings = 0;
     for (var q in acceptedQuotes) {
       totalEarnings += q.total;
     }
 
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final pageBackground = theme.scaffoldBackgroundColor;
     final primaryText = colorScheme.onSurface;
-    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
-    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
+    final secondaryText =
+        isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
+    final mutedText =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
 
     return Scaffold(
       backgroundColor: pageBackground,
@@ -205,25 +216,33 @@ class HomeScreen extends StatelessWidget {
                       );
                     },
                     icon: Icon(
-                      authProvider.isAuthenticated ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                      authProvider.isAuthenticated
+                          ? Icons.cloud_done_outlined
+                          : Icons.cloud_off_outlined,
                       size: 16,
-                      color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                      color: authProvider.isAuthenticated
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFF59E0B),
                     ),
                     label: Text(
                       authProvider.isAuthenticated ? "Nube" : "Local",
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                        color: authProvider.isAuthenticated
+                            ? const Color(0xFF16A34A)
+                            : const Color(0xFFF59E0B),
                       ),
                     ),
                     style: TextButton.styleFrom(
                       backgroundColor: authProvider.isAuthenticated
                           ? const Color(0xFF16A34A).withOpacity(0.08)
                           : const Color(0xFFF59E0B).withOpacity(0.08),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ),
@@ -249,7 +268,8 @@ class HomeScreen extends StatelessWidget {
                             width: 56,
                             height: 56,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildDefaultCompanyLogo(context),
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildDefaultCompanyLogo(context),
                           ),
                         )
                       else
@@ -260,7 +280,9 @@ class HomeScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              company.name.isNotEmpty ? company.name : "Nombre de tu Empresa",
+                              company.name.isNotEmpty
+                                  ? company.name
+                                  : "Nombre de tu Empresa",
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
@@ -270,8 +292,8 @@ class HomeScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              company.isConfigured 
-                                  ? "${company.email} | ${company.phone}" 
+                              company.isConfigured
+                                  ? "${company.email} | ${company.phone}"
                                   : "Configura los datos de tu empresa en la pestaña Ajustes",
                               style: TextStyle(
                                 fontSize: 13,
@@ -291,18 +313,25 @@ class HomeScreen extends StatelessWidget {
                   // Missing Company Profile Banner
                   if (!company.isConfigured)
                     Card(
-                      color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
+                      color: isDark
+                          ? const Color(0xFF450A0A)
+                          : const Color(0xFFFEF2F2),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5), width: 1),
+                        side: BorderSide(
+                            color: isDark
+                                ? const Color(0xFF991B1B)
+                                : const Color(0xFFFCA5A5),
+                            width: 1),
                       ),
                       margin: const EdgeInsets.only(bottom: 20),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Row(
                           children: [
-                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 24),
+                            const Icon(Icons.warning_amber_rounded,
+                                color: Color(0xFFDC2626), size: 24),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -312,7 +341,9 @@ class HomeScreen extends StatelessWidget {
                                     "Faltan Datos de la Empresa",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? const Color(0xFFFECACA) : const Color(0xFF991B1B),
+                                      color: isDark
+                                          ? const Color(0xFFFECACA)
+                                          : const Color(0xFF991B1B),
                                       fontSize: 14,
                                     ),
                                   ),
@@ -321,7 +352,9 @@ class HomeScreen extends StatelessWidget {
                                     "Configura tu logo de negocio y contacto en Ajustes para incluirlos en los presupuestos generados.",
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF7F1D1D),
+                                      color: isDark
+                                          ? const Color(0xFFFCA5A5)
+                                          : const Color(0xFF7F1D1D),
                                     ),
                                   ),
                                 ],
@@ -338,7 +371,9 @@ class HomeScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
-                        color: isDark ? Colors.white.withOpacity(0.24) : Colors.transparent,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.24)
+                            : Colors.transparent,
                         width: isDark ? 1.2 : 0,
                       ),
                     ),
@@ -369,7 +404,8 @@ class HomeScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       "💰 Ingresos Totales",
@@ -379,7 +415,9 @@ class HomeScreen extends StatelessWidget {
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    Icon(Icons.trending_up, color: Colors.white.withOpacity(0.9), size: 20),
+                                    Icon(Icons.trending_up,
+                                        color: Colors.white.withOpacity(0.9),
+                                        size: 20),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
@@ -436,7 +474,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 24),
 
                   // 4. Quick Actions with thin borders and soft opacity backgrounds
@@ -461,7 +499,8 @@ class HomeScreen extends StatelessWidget {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                              MaterialPageRoute(
+                                  builder: (context) => const NewQuoteScreen()),
                             );
                           },
                         ),
@@ -474,7 +513,8 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.history,
                           iconColor: const Color(0xFFF59E0B),
                           onTap: () {
-                            final mainState = context.findAncestorStateOfType<MainScreenState>();
+                            final mainState = context
+                                .findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
                               mainState.setSelectedIndex(1);
                             }
@@ -489,7 +529,8 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.handyman_outlined,
                           iconColor: const Color(0xFF16A34A),
                           onTap: () {
-                            final mainState = context.findAncestorStateOfType<MainScreenState>();
+                            final mainState = context
+                                .findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
                               mainState.setSelectedIndex(2);
                             }
@@ -504,7 +545,8 @@ class HomeScreen extends StatelessWidget {
                           icon: Icons.settings_outlined,
                           iconColor: const Color(0xFF6B7280),
                           onTap: () {
-                            final mainState = context.findAncestorStateOfType<MainScreenState>();
+                            final mainState = context
+                                .findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
                               mainState.setSelectedIndex(3);
                             }
@@ -513,9 +555,9 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 28),
-                  
+
                   // 5. Recent Quotes Header Section with Inline Button aligned to the right
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -534,17 +576,24 @@ class HomeScreen extends StatelessWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const NewQuoteScreen()),
                           );
                         },
-                        icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                        icon: const Icon(Icons.add,
+                            size: 14, color: Colors.white),
                         label: const Text(
                           "Nuevo",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
                           backgroundColor: accentColor,
                           elevation: 0,
                         ),
@@ -561,7 +610,8 @@ class HomeScreen extends StatelessWidget {
           if (recentQuotes.isEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 10.0),
                 child: _buildPremiumCard(
                   context,
                   child: Padding(
@@ -596,7 +646,8 @@ class HomeScreen extends StatelessWidget {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                              MaterialPageRoute(
+                                  builder: (context) => const NewQuoteScreen()),
                             );
                           },
                           child: const Text("Crear Presupuesto"),
@@ -612,26 +663,29 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final quote = recentQuotes[index];
-                  
+
                   Color statusColor;
                   switch (quote.status) {
                     case 'Aceptado':
                       statusColor = const Color(0xFF16A34A); // Success Green
                       break;
                     case 'Rechazado':
-                      statusColor = const Color(0xFF6B7280); // Gray for cancelled/rejected
+                      statusColor = const Color(
+                          0xFF6B7280); // Gray for cancelled/rejected
                       break;
                     default:
                       statusColor = const Color(0xFFF59E0B); // Warning Orange
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     child: _buildPremiumCard(
                       context,
                       child: ListTile(
                         onTap: () => _showQuoteDetails(context, quote),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         // Indicator dot of color
                         leading: Container(
                           width: 8,
@@ -695,7 +749,7 @@ class HomeScreen extends StatelessWidget {
                 childCount: recentQuotes.length,
               ),
             ),
-          
+
           // Extra bottom padding for floating action button
           const SliverToBoxAdapter(
             child: SizedBox(height: 80),
@@ -770,7 +824,8 @@ class HomeScreen extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+            padding:
+                const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -810,8 +865,10 @@ class HomeScreen extends StatelessWidget {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
-    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
+    final secondaryText =
+        isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
+    final mutedText =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
 
     return _buildPremiumCard(
       context,
@@ -861,7 +918,8 @@ class HomeScreen extends StatelessWidget {
   void _showQuoteDetails(BuildContext context, Quote quote) {
     final company = Provider.of<CompanyProvider>(context, listen: false);
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     showModalBottomSheet(
@@ -915,10 +973,14 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Text(
                             "Presupuesto #${quote.number}",
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            icon: const Icon(Icons.delete_outline,
+                                color: Colors.red),
                             onPressed: () {
                               Navigator.pop(context); // Close bottom sheet
                               _confirmDeleteQuote(context, quote);
@@ -931,26 +993,36 @@ class HomeScreen extends StatelessWidget {
                       // Status Modifier Row
                       Row(
                         children: [
-                          const Text("Estado: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Estado: ",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           DropdownButton<String>(
                             value: quote.status,
-                            icon: Icon(Icons.arrow_drop_down, color: statusColor),
-                            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                            icon:
+                                Icon(Icons.arrow_drop_down, color: statusColor),
+                            style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold),
                             underline: Container(
                               height: 2,
                               color: statusColor,
                             ),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
-                                quotesProvider.updateQuoteStatus(quote.id, newValue);
-                                Navigator.pop(context); // Close and reopen to update full details safely
-                                final updatedQuote = quotesProvider.quotes.firstWhere((q) => q.id == quote.id);
+                                quotesProvider.updateQuoteStatus(
+                                    quote.id, newValue);
+                                Navigator.pop(
+                                    context); // Close and reopen to update full details safely
+                                final updatedQuote = quotesProvider.quotes
+                                    .firstWhere((q) => q.id == quote.id);
                                 _showQuoteDetails(context, updatedQuote);
                               }
                             },
-                            items: <String>['Pendiente', 'Aceptado', 'Rechazado']
-                                .map<DropdownMenuItem<String>>((String value) {
+                            items: <String>[
+                              'Pendiente',
+                              'Aceptado',
+                              'Rechazado'
+                            ].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -962,23 +1034,38 @@ class HomeScreen extends StatelessWidget {
                       const Divider(height: 32),
 
                       // Date & Client Details
-                      Text("INFORMACIÓN DEL CLIENTE", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text("INFORMACIÓN DEL CLIENTE",
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text("Nombre: ${quote.clientName}", style: const TextStyle(fontSize: 15)),
+                      Text("Nombre: ${quote.clientName}",
+                          style: const TextStyle(fontSize: 15)),
                       if (quote.clientPhone.isNotEmpty)
-                        Text("Teléfono: ${quote.clientPhone}", style: const TextStyle(fontSize: 15)),
+                        Text("Teléfono: ${quote.clientPhone}",
+                            style: const TextStyle(fontSize: 15)),
                       if (quote.clientAddress.isNotEmpty)
-                        Text("Dirección: ${quote.clientAddress}", style: const TextStyle(fontSize: 15)),
-                      Text("Fecha: ${dateFormat.format(quote.date)}", style: const TextStyle(fontSize: 15)),
-                      
+                        Text("Dirección: ${quote.clientAddress}",
+                            style: const TextStyle(fontSize: 15)),
+                      Text("Fecha: ${dateFormat.format(quote.date)}",
+                          style: const TextStyle(fontSize: 15)),
+
                       const Divider(height: 32),
 
                       // Services Table
-                      Text("DETALLE DE SERVICIOS", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text("DETALLE DE SERVICIOS",
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Table(
                         border: TableBorder(
-                          horizontalInside: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
+                          horizontalInside: BorderSide(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                              width: 0.5),
                         ),
                         columnWidths: const {
                           0: FlexColumnWidth(3),
@@ -989,16 +1076,19 @@ class HomeScreen extends StatelessWidget {
                             return TableRow(
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Text(item.name),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
                                       currencyFormat.format(item.price),
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
                                     ),
                                   ),
                                 ),
@@ -1022,9 +1112,15 @@ class HomeScreen extends StatelessWidget {
 
                       if (quote.observations.isNotEmpty) ...[
                         const Divider(height: 32),
-                        Text("OBSERVACIONES", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Text("OBSERVACIONES",
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Text(quote.observations, style: const TextStyle(fontStyle: FontStyle.italic)),
+                        Text(quote.observations,
+                            style:
+                                const TextStyle(fontStyle: FontStyle.italic)),
                       ],
 
                       const Divider(height: 32),
@@ -1035,7 +1131,9 @@ class HomeScreen extends StatelessWidget {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () async {
-                                final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                final pdfBytes =
+                                    await PdfGenerator.generateQuotePdf(
+                                        company: company, quote: quote);
                                 await Printing.layoutPdf(
                                   onLayout: (format) => pdfBytes,
                                   name: 'presupuesto_${quote.number}',
@@ -1049,7 +1147,9 @@ class HomeScreen extends StatelessWidget {
                           Expanded(
                             child: FilledButton.icon(
                               onPressed: () async {
-                                final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                final pdfBytes =
+                                    await PdfGenerator.generateQuotePdf(
+                                        company: company, quote: quote);
                                 await Printing.sharePdf(
                                   bytes: pdfBytes,
                                   filename: 'presupuesto_${quote.number}.pdf',
@@ -1079,7 +1179,8 @@ class HomeScreen extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: const Text('¿Eliminar presupuesto?'),
-          content: Text('¿Estás seguro de que deseas eliminar el presupuesto N° ${quote.number} de ${quote.clientName}? Esta acción no se puede deshacer.'),
+          content: Text(
+              '¿Estás seguro de que deseas eliminar el presupuesto N° ${quote.number} de ${quote.clientName}? Esta acción no se puede deshacer.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -1087,7 +1188,8 @@ class HomeScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<QuotesProvider>(context, listen: false).deleteQuote(quote.id);
+                Provider.of<QuotesProvider>(context, listen: false)
+                    .deleteQuote(quote.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -1096,7 +1198,8 @@ class HomeScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );

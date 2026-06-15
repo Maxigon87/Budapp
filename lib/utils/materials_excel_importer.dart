@@ -42,12 +42,15 @@ class MaterialsExcelImporter {
         ...rows.map((row) => [row.nombre, row.categoria, row.ultimoPrecio]),
     ];
 
-    archive.addFile(ArchiveFile.string('[Content_Types].xml', _contentTypesXml));
+    archive
+        .addFile(ArchiveFile.string('[Content_Types].xml', _contentTypesXml));
     archive.addFile(ArchiveFile.string('_rels/.rels', _rootRelsXml));
     archive.addFile(ArchiveFile.string('xl/workbook.xml', _workbookXml));
-    archive.addFile(ArchiveFile.string('xl/_rels/workbook.xml.rels', _workbookRelsXml));
+    archive.addFile(
+        ArchiveFile.string('xl/_rels/workbook.xml.rels', _workbookRelsXml));
     archive.addFile(ArchiveFile.string('xl/styles.xml', _stylesXml));
-    archive.addFile(ArchiveFile.string('xl/worksheets/sheet1.xml', _buildWorksheetXml(rowValues)));
+    archive.addFile(ArchiveFile.string(
+        'xl/worksheets/sheet1.xml', _buildWorksheetXml(rowValues)));
 
     return Uint8List.fromList(ZipEncoder().encode(archive));
   }
@@ -101,12 +104,14 @@ class MaterialsExcelImporter {
       if (priceText.isNotEmpty) {
         price = _parsePrice(priceText);
         if (price == null || price < 0) {
-          errors.add('Fila $excelRowNumber: el precio "$priceText" no es válido.');
+          errors.add(
+              'Fila $excelRowNumber: el precio "$priceText" no es válido.');
           continue;
         }
       }
 
-      rows.add(MaterialExcelRow(nombre: nombre, categoria: categoria, ultimoPrecio: price));
+      rows.add(MaterialExcelRow(
+          nombre: nombre, categoria: categoria, ultimoPrecio: price));
     }
 
     if (rows.isEmpty && errors.isEmpty) {
@@ -124,46 +129,58 @@ class MaterialsExcelImporter {
     return RegExp(r'<si[^>]*>(.*?)</si>', dotAll: true)
         .allMatches(xml)
         .map((match) {
-          final itemXml = match.group(1) ?? '';
-          final text = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true)
-              .allMatches(itemXml)
-              .map((textMatch) => _xmlUnescape(textMatch.group(1) ?? ''))
-              .join();
-          return text;
-        })
-        .toList();
+      final itemXml = match.group(1) ?? '';
+      final text = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true)
+          .allMatches(itemXml)
+          .map((textMatch) => _xmlUnescape(textMatch.group(1) ?? ''))
+          .join();
+      return text;
+    }).toList();
   }
 
-  static List<List<String>> _readRows(String sheetXml, List<String> sharedStrings) {
-    return RegExp(r'<row[^>]*>(.*?)</row>', dotAll: true).allMatches(sheetXml).map((rowMatch) {
+  static List<List<String>> _readRows(
+      String sheetXml, List<String> sharedStrings) {
+    return RegExp(r'<row[^>]*>(.*?)</row>', dotAll: true)
+        .allMatches(sheetXml)
+        .map((rowMatch) {
       final values = <int, String>{};
       final rowXml = rowMatch.group(1) ?? '';
-      for (final cellMatch in RegExp(r'<c([^>]*)>(.*?)</c>', dotAll: true).allMatches(rowXml)) {
+      for (final cellMatch
+          in RegExp(r'<c([^>]*)>(.*?)</c>', dotAll: true).allMatches(rowXml)) {
         final attributes = cellMatch.group(1) ?? '';
         final cellXml = cellMatch.group(2) ?? '';
-        final reference = RegExp(r'\br="([A-Z]+)(\d+)"').firstMatch(attributes)?.group(1);
+        final reference =
+            RegExp(r'\br="([A-Z]+)(\d+)"').firstMatch(attributes)?.group(1);
         if (reference == null) continue;
 
         final columnIndex = _columnIndex(reference);
-        values[columnIndex] = _readCellValue(attributes, cellXml, sharedStrings);
+        values[columnIndex] =
+            _readCellValue(attributes, cellXml, sharedStrings);
       }
 
       if (values.isEmpty) return const <String>[];
       final lastIndex = values.keys.reduce((a, b) => a > b ? a : b);
-      return List<String>.generate(lastIndex + 1, (index) => values[index] ?? '');
+      return List<String>.generate(
+          lastIndex + 1, (index) => values[index] ?? '');
     }).toList();
   }
 
-  static String _readCellValue(String attributes, String cellXml, List<String> sharedStrings) {
+  static String _readCellValue(
+      String attributes, String cellXml, List<String> sharedStrings) {
     if (attributes.contains('t="inlineStr"')) {
-      final match = RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true).firstMatch(cellXml);
+      final match =
+          RegExp(r'<t[^>]*>(.*?)</t>', dotAll: true).firstMatch(cellXml);
       return _xmlUnescape(match?.group(1) ?? '');
     }
 
-    final value = RegExp(r'<v[^>]*>(.*?)</v>', dotAll: true).firstMatch(cellXml)?.group(1) ?? '';
+    final value = RegExp(r'<v[^>]*>(.*?)</v>', dotAll: true)
+            .firstMatch(cellXml)
+            ?.group(1) ??
+        '';
     if (attributes.contains('t="s"')) {
       final index = int.tryParse(value) ?? -1;
-      if (index >= 0 && index < sharedStrings.length) return sharedStrings[index];
+      if (index >= 0 && index < sharedStrings.length)
+        return sharedStrings[index];
       return '';
     }
 
@@ -192,10 +209,18 @@ class MaterialsExcelImporter {
     final lastComma = cleaned.lastIndexOf(',');
     final lastDot = cleaned.lastIndexOf('.');
     final decimalSeparatorIndex = lastComma > lastDot ? lastComma : lastDot;
-    final fractionalDigits = decimalSeparatorIndex >= 0 ? cleaned.length - decimalSeparatorIndex - 1 : 0;
-    if (decimalSeparatorIndex >= 0 && fractionalDigits > 0 && fractionalDigits <= 2) {
-      final integerPart = cleaned.substring(0, decimalSeparatorIndex).replaceAll(RegExp(r'[^0-9-]'), '');
-      final fractionalPart = cleaned.substring(decimalSeparatorIndex + 1).replaceAll(RegExp(r'[^0-9]'), '');
+    final fractionalDigits = decimalSeparatorIndex >= 0
+        ? cleaned.length - decimalSeparatorIndex - 1
+        : 0;
+    if (decimalSeparatorIndex >= 0 &&
+        fractionalDigits > 0 &&
+        fractionalDigits <= 2) {
+      final integerPart = cleaned
+          .substring(0, decimalSeparatorIndex)
+          .replaceAll(RegExp(r'[^0-9-]'), '');
+      final fractionalPart = cleaned
+          .substring(decimalSeparatorIndex + 1)
+          .replaceAll(RegExp(r'[^0-9]'), '');
       return double.tryParse('$integerPart.$fractionalPart');
     }
 
@@ -205,20 +230,25 @@ class MaterialsExcelImporter {
   static String _buildWorksheetXml(List<List<Object?>> rows) {
     final buffer = StringBuffer()
       ..write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
-      ..write('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ')
-      ..write('xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">')
+      ..write(
+          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ')
+      ..write(
+          'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">')
       ..write('<sheetData>');
 
     for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       final excelRowNumber = rowIndex + 1;
       buffer.write('<row r="$excelRowNumber">');
-      for (var columnIndex = 0; columnIndex < rows[rowIndex].length; columnIndex++) {
+      for (var columnIndex = 0;
+          columnIndex < rows[rowIndex].length;
+          columnIndex++) {
         final reference = '${_columnName(columnIndex)}$excelRowNumber';
         final value = rows[rowIndex][columnIndex];
         if (value is num) {
           buffer.write('<c r="$reference"><v>$value</v></c>');
         } else {
-          buffer.write('<c r="$reference" t="inlineStr"><is><t>${_xmlEscape(value?.toString() ?? '')}</t></is></c>');
+          buffer.write(
+              '<c r="$reference" t="inlineStr"><is><t>${_xmlEscape(value?.toString() ?? '')}</t></is></c>');
         }
       }
       buffer.write('</row>');
@@ -260,7 +290,8 @@ class MaterialsExcelImporter {
   }
 }
 
-const String _contentTypesXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const String _contentTypesXml =
+    '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
@@ -269,25 +300,29 @@ const String _contentTypesXml = '''<?xml version="1.0" encoding="UTF-8" standalo
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>''';
 
-const String _rootRelsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const String _rootRelsXml =
+    '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>''';
 
-const String _workbookXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const String _workbookXml =
+    '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
     <sheet name="Materiales" sheetId="1" r:id="rId1"/>
   </sheets>
 </workbook>''';
 
-const String _workbookRelsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const String _workbookRelsXml =
+    '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>''';
 
-const String _stylesXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+const String _stylesXml =
+    '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
   <fills count="1"><fill><patternFill patternType="none"/></fill></fills>

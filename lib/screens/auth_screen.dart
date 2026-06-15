@@ -45,7 +45,9 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isSignUpMode ? 'Cuenta creada con éxito' : 'Sesión iniciada con éxito'),
+            content: Text(_isSignUpMode
+                ? 'Cuenta creada con éxito'
+                : 'Sesión iniciada con éxito'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -66,8 +68,10 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _syncData(bool upload) async {
-    final companyProvider = Provider.of<CompanyProvider>(context, listen: false);
-    final servicesProvider = Provider.of<ServicesProvider>(context, listen: false);
+    final companyProvider =
+        Provider.of<CompanyProvider>(context, listen: false);
+    final servicesProvider =
+        Provider.of<ServicesProvider>(context, listen: false);
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
 
     showDialog(
@@ -86,15 +90,27 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (upload) {
-        await companyProvider.uploadToCloud().timeout(const Duration(seconds: 10));
-        await servicesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
-        await quotesProvider.uploadToCloud().timeout(const Duration(seconds: 15));
+        await companyProvider
+            .uploadToCloud()
+            .timeout(const Duration(seconds: 10));
+        await servicesProvider
+            .uploadToCloud()
+            .timeout(const Duration(seconds: 15));
+        await quotesProvider
+            .uploadToCloud()
+            .timeout(const Duration(seconds: 15));
       } else {
-        await companyProvider.syncFromCloud().timeout(const Duration(seconds: 10));
-        await servicesProvider.syncFromCloud().timeout(const Duration(seconds: 15));
-        await quotesProvider.syncFromCloud().timeout(const Duration(seconds: 15));
+        await companyProvider
+            .syncFromCloud()
+            .timeout(const Duration(seconds: 10));
+        await servicesProvider
+            .syncFromCloud()
+            .timeout(const Duration(seconds: 15));
+        await quotesProvider
+            .syncFromCloud()
+            .timeout(const Duration(seconds: 15));
       }
-      
+
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +133,8 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pop(context); // Close loading dialog
         String errorMessage = 'Error de sincronización: $e';
         if (e.toString().contains('TimeoutException')) {
-          errorMessage = 'La sincronización tardó demasiado. Por favor, verifica tu conexión a internet o los permisos de base de datos.';
+          errorMessage =
+              'La sincronización tardó demasiado. Por favor, verifica tu conexión a internet o los permisos de base de datos.';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -142,7 +159,8 @@ class _AuthScreenState extends State<AuthScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text(
             'Sincronización de Datos',
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -164,7 +182,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   (route) => false,
                 );
               },
-              child: const Text('Ignorar', style: TextStyle(color: Color(0xFF6B7280))),
+              child: const Text('Ignorar',
+                  style: TextStyle(color: Color(0xFF6B7280))),
             ),
             OutlinedButton(
               onPressed: () {
@@ -174,7 +193,8 @@ class _AuthScreenState extends State<AuthScreen> {
               child: const Text('Restaurar desde Nube'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A)),
+              style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A8A)),
               onPressed: () {
                 Navigator.pop(context);
                 _syncData(true);
@@ -211,18 +231,21 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   // Icon header
                   Icon(
-                    _isSignUpMode ? Icons.person_add_outlined : Icons.lock_outline,
+                    _isSignUpMode
+                        ? Icons.person_add_outlined
+                        : Icons.lock_outline,
                     size: 64,
                     color: const Color(0xFF1E3A8A),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   Text(
-                    _isSignUpMode 
+                    _isSignUpMode
                         ? 'Únete a Budapp para guardar tus presupuestos en la nube.'
                         : 'Accede a tu cuenta para sincronizar tus datos.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: theme.colorScheme.outline),
+                    style: TextStyle(
+                        fontSize: 14, color: theme.colorScheme.outline),
                   ),
                   const SizedBox(height: 32),
 
@@ -239,7 +262,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Ingresa tu correo electrónico';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                          .hasMatch(value.trim())) {
                         return 'Ingresa un correo electrónico válido';
                       }
                       return null;
@@ -255,7 +279,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       labelText: 'Contraseña (mín. 6 caracteres)',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(_isObscured ? Icons.visibility_off : Icons.visibility),
+                        icon: Icon(_isObscured
+                            ? Icons.visibility_off
+                            : Icons.visibility),
                         onPressed: () {
                           setState(() {
                             _isObscured = !_isObscured;
@@ -286,11 +312,15 @@ class _AuthScreenState extends State<AuthScreen> {
                         onPressed: _handleAuthAction,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF1E3A8A),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text(
-                          _isSignUpMode ? 'Registrarse y Entrar' : 'Iniciar Sesión',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          _isSignUpMode
+                              ? 'Registrarse y Entrar'
+                              : 'Iniciar Sesión',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
@@ -304,8 +334,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       });
                     },
                     child: Text(
-                      _isSignUpMode 
-                          ? '¿Ya tienes una cuenta? Inicia sesión aquí' 
+                      _isSignUpMode
+                          ? '¿Ya tienes una cuenta? Inicia sesión aquí'
                           : '¿No tienes cuenta? Regístrate aquí',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),

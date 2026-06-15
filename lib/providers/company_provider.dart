@@ -33,8 +33,10 @@ class CompanyProvider extends ChangeNotifier {
   }
 
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
-  FirebaseFirestore? get _firestore => _isFirebaseAvailable ? FirebaseFirestore.instance : null;
-  FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
+  FirebaseFirestore? get _firestore =>
+      _isFirebaseAvailable ? FirebaseFirestore.instance : null;
+  FirebaseAuth? get _auth =>
+      _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
   String get _currentUserId {
     final auth = _auth;
@@ -44,11 +46,16 @@ class CompanyProvider extends ChangeNotifier {
     return 'guest';
   }
 
-  String get name => _box.get('${_currentUserId}_name', defaultValue: '') as String;
-  String get address => _box.get('${_currentUserId}_address', defaultValue: '') as String;
-  String get phone => _box.get('${_currentUserId}_phone', defaultValue: '') as String;
-  String get email => _box.get('${_currentUserId}_email', defaultValue: '') as String;
-  String get website => _box.get('${_currentUserId}_website', defaultValue: '') as String;
+  String get name =>
+      _box.get('${_currentUserId}_name', defaultValue: '') as String;
+  String get address =>
+      _box.get('${_currentUserId}_address', defaultValue: '') as String;
+  String get phone =>
+      _box.get('${_currentUserId}_phone', defaultValue: '') as String;
+  String get email =>
+      _box.get('${_currentUserId}_email', defaultValue: '') as String;
+  String get website =>
+      _box.get('${_currentUserId}_website', defaultValue: '') as String;
 
   String? _resolvedLogoPath;
   String? get logoPath => _resolvedLogoPath;
@@ -60,7 +67,8 @@ class CompanyProvider extends ChangeNotifier {
         targetWidth: 150,
       );
       final frame = await codec.getNextFrame();
-      final byteData = await frame.image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData =
+          await frame.image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData != null) {
         return byteData.buffer.asUint8List();
       }
@@ -72,7 +80,7 @@ class CompanyProvider extends ChangeNotifier {
 
   Future<void> _initLogoPath() async {
     final uid = _currentUserId;
-    
+
     // Migration check: check if there are legacy global key values (e.g., name, address)
     // and if we are in guest or user mode, migrate them to prefix key if prefix key doesn't exist
     if (!_box.containsKey('${uid}_name') && _box.containsKey('name')) {
@@ -81,9 +89,10 @@ class CompanyProvider extends ChangeNotifier {
       await _box.put('${uid}_phone', _box.get('phone'));
       await _box.put('${uid}_email', _box.get('email'));
       await _box.put('${uid}_website', _box.get('website'));
-      await _box.put('${uid}_hasLogo', _box.get('hasLogo', defaultValue: false));
+      await _box.put(
+          '${uid}_hasLogo', _box.get('hasLogo', defaultValue: false));
       await _box.put('${uid}_logoBase64', _box.get('logoBase64'));
-      
+
       // Delete legacy global keys to keep database clean
       await _box.delete('name');
       await _box.delete('address');
@@ -99,7 +108,7 @@ class CompanyProvider extends ChangeNotifier {
       try {
         final directory = await getApplicationDocumentsDirectory();
         _resolvedLogoPath = '${directory.path}/${uid}_company_logo.png';
-        
+
         if (!File(_resolvedLogoPath!).existsSync()) {
           final base64Logo = _box.get('${uid}_logoBase64') as String?;
           if (base64Logo != null && base64Logo.isNotEmpty) {
@@ -149,7 +158,7 @@ class CompanyProvider extends ChangeNotifier {
       try {
         final directory = await getApplicationDocumentsDirectory();
         final permanentPath = '${directory.path}/${uid}_company_logo.png';
-        
+
         if (logoPath != permanentPath) {
           final sourceFile = File(logoPath);
           if (sourceFile.existsSync()) {
@@ -202,7 +211,7 @@ class CompanyProvider extends ChangeNotifier {
       debugPrint("Error deleting logo file: $e");
     }
     notifyListeners();
-    
+
     // Trigger cloud sync
     await _syncCompanyToCloud();
   }
@@ -223,14 +232,14 @@ class CompanyProvider extends ChangeNotifier {
             .collection('company')
             .doc('settings')
             .set({
-              'name': name,
-              'address': address,
-              'phone': phone,
-              'email': email,
-              'website': website,
-              'logoBase64': logoBase64,
-            });
-        
+          'name': name,
+          'address': address,
+          'phone': phone,
+          'email': email,
+          'website': website,
+          'logoBase64': logoBase64,
+        });
+
         await _box.put('${user.uid}_syncStatus', 'synced');
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");
@@ -265,12 +274,12 @@ class CompanyProvider extends ChangeNotifier {
           await _box.put('${uid}_email', data['email'] ?? '');
           await _box.put('${uid}_website', data['website'] ?? '');
           await _box.put('${uid}_syncStatus', 'synced');
-          
+
           final logoBase64 = data['logoBase64'] as String?;
           if (logoBase64 != null && logoBase64.isNotEmpty) {
             await _box.put('${uid}_logoBase64', logoBase64);
             await _box.put('${uid}_hasLogo', true);
-            
+
             final directory = await getApplicationDocumentsDirectory();
             _resolvedLogoPath = '${directory.path}/${uid}_company_logo.png';
             try {
@@ -318,14 +327,14 @@ class CompanyProvider extends ChangeNotifier {
             .collection('company')
             .doc('settings')
             .set({
-              'name': name,
-              'address': address,
-              'phone': phone,
-              'email': email,
-              'website': website,
-              'logoBase64': logoBase64,
-            });
-        
+          'name': name,
+          'address': address,
+          'phone': phone,
+          'email': email,
+          'website': website,
+          'logoBase64': logoBase64,
+        });
+
         await _box.put('${user.uid}_syncStatus', 'synced');
       } catch (e) {
         debugPrint("Failed to sync company settings to Firestore: $e");
@@ -341,7 +350,8 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final syncStatus = _box.get('${user.uid}_syncStatus', defaultValue: 'synced') as String;
+    final syncStatus =
+        _box.get('${user.uid}_syncStatus', defaultValue: 'synced') as String;
     if (syncStatus == 'pending') {
       await _syncCompanyToCloud();
     }
@@ -363,7 +373,7 @@ class CompanyProvider extends ChangeNotifier {
     for (var key in keysToDelete) {
       await _box.delete(key);
     }
-    
+
     _resolvedLogoPath = null;
 
     try {
@@ -407,7 +417,8 @@ class CompanyProvider extends ChangeNotifier {
   }
 
   bool hasPendingSync(String uid) {
-    final syncStatus = _box.get('${uid}_syncStatus', defaultValue: 'synced') as String;
+    final syncStatus =
+        _box.get('${uid}_syncStatus', defaultValue: 'synced') as String;
     return syncStatus == 'pending';
   }
 }

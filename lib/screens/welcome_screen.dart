@@ -56,13 +56,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     try {
       // 1. Verify if Firebase is initialized
       if (Firebase.apps.isEmpty) {
-        throw Exception("Firebase no está inicializado. Asegúrate de tener configurado tu google-services.json.");
+        throw Exception(
+            "Firebase no está inicializado. Asegúrate de tener configurado tu google-services.json.");
       }
 
       // 2. Perform a test write and read on Firestore with a timeout
       final firestore = FirebaseFirestore.instance;
-      final testDocRef = firestore.collection('connection_tests').doc('test_connection');
-      
+      final testDocRef =
+          firestore.collection('connection_tests').doc('test_connection');
+
       await testDocRef.set({
         'timestamp': FieldValue.serverTimestamp(),
         'status': 'checking_reachability',
@@ -75,27 +77,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         _showResultDialog(
           success: true,
           title: "Conexión Exitosa",
-          message: "¡Excelente! Firebase está completamente operativo. Se logró inicializar el SDK, escribir y leer un documento de prueba en Cloud Firestore.",
+          message:
+              "¡Excelente! Firebase está completamente operativo. Se logró inicializar el SDK, escribir y leer un documento de prueba en Cloud Firestore.",
         );
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        
+
         final errorStr = e.toString();
         if (errorStr.contains('permission-denied')) {
           // Firebase is connected but security rules rejected write (which is normal if not logged in)
           _showResultDialog(
             success: true,
             title: "Conexión Exitosa (Segura)",
-            message: "¡Conexión parcial exitosa! La base de datos Firebase es accesible y respondió a la solicitud. (Fue bloqueada por Reglas de Seguridad, lo cual es correcto ya que no has iniciado sesión aún).",
+            message:
+                "¡Conexión parcial exitosa! La base de datos Firebase es accesible y respondió a la solicitud. (Fue bloqueada por Reglas de Seguridad, lo cual es correcto ya que no has iniciado sesión aún).",
           );
         } else {
           // Real connectivity/config error
           _showResultDialog(
             success: false,
             title: "Fallo de Conexión",
-            message: "No se pudo conectar con Firebase.\n\nDetalles:\n$e\n\nVerifica:\n"
+            message:
+                "No se pudo conectar con Firebase.\n\nDetalles:\n$e\n\nVerifica:\n"
                 "1. Haber creado la base de datos Firestore en tu consola de Firebase.\n"
                 "2. Que tu archivo google-services.json esté actualizado y corresponda a tu Application ID.\n"
                 "3. Conexión de red activa en el dispositivo.",
@@ -111,24 +116,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
-  void _showResultDialog({required bool success, required String title, required String message}) {
+  void _showResultDialog(
+      {required bool success, required String title, required String message}) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Icon(
                 success ? Icons.check_circle_outline : Icons.error_outline,
-                color: success ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                color:
+                    success ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
                 size: 28,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
             ],
@@ -140,8 +149,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           actions: [
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: success ? const Color(0xFF1E3A8A) : const Color(0xFF6B7280),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                backgroundColor:
+                    success ? const Color(0xFF1E3A8A) : const Color(0xFF6B7280),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () => Navigator.pop(context),
               child: const Text("Entendido"),
@@ -173,7 +184,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -250,17 +262,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const AuthScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const AuthScreen()),
                           );
                         },
                         icon: const Icon(Icons.login_outlined),
                         label: const Text(
                           "Iniciar Sesión / Crear Cuenta",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF1E3A8A),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -275,17 +290,22 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           // Bypasses authentication and enters app directly
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => const MainScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const MainScreen()),
                           );
                         },
                         icon: const Icon(Icons.person_outline),
                         label: const Text(
                           "Entrar como Invitado",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(
+                              color: theme.colorScheme.outlineVariant,
+                              width: 1.5),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                     ),
@@ -297,15 +317,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 // Firebase Test Button Divider
                 Row(
                   children: [
-                    Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                    Expanded(
+                        child:
+                            Divider(color: theme.colorScheme.outlineVariant)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0),
                       child: Text(
                         "Configuración",
-                        style: TextStyle(fontSize: 11, color: theme.colorScheme.outline),
+                        style: TextStyle(
+                            fontSize: 11, color: theme.colorScheme.outline),
                       ),
                     ),
-                    Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                    Expanded(
+                        child:
+                            Divider(color: theme.colorScheme.outlineVariant)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -316,14 +341,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   height: 48,
                   child: TextButton.icon(
                     onPressed: _testFirebaseConnection,
-                    icon: const Icon(Icons.cloud_sync_outlined, color: Color(0xFF2563EB)),
+                    icon: const Icon(Icons.cloud_sync_outlined,
+                        color: Color(0xFF2563EB)),
                     label: const Text(
                       "Probar Conexión con Firebase",
-                      style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF2563EB)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2563EB)),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB).withOpacity(0.08),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor:
+                          const Color(0xFF2563EB).withOpacity(0.08),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),

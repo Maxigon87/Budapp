@@ -23,13 +23,16 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
   static const XTypeGroup _excelTypeGroup = XTypeGroup(
     label: 'Excel',
     extensions: ['xlsx'],
-    mimeTypes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    mimeTypes: [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ],
   );
 
   bool _isImportingMaterials = false;
 
   Future<void> _downloadMaterialsTemplate() async {
-    final materials = Provider.of<MaterialsProvider>(context, listen: false).materials;
+    final materials =
+        Provider.of<MaterialsProvider>(context, listen: false).materials;
     final rows = materials
         .map(
           (m) => MaterialExcelRow(
@@ -80,7 +83,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
 
       final file = XFile.fromData(
         bytes,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         name: 'materiales.xlsx',
       );
       await file.saveTo(saveLocation.path);
@@ -96,7 +100,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
   }
 
   Future<void> _importMaterialsFromExcel() async {
-    final selectedFile = await openFile(acceptedTypeGroups: const [_excelTypeGroup]);
+    final selectedFile =
+        await openFile(acceptedTypeGroups: const [_excelTypeGroup]);
     if (selectedFile == null) return;
 
     setState(() {
@@ -118,14 +123,16 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       final currentMaterials = provider.materials;
       final materialMap = <String, MaterialItem>{};
       for (final m in currentMaterials) {
-        final key = '${m.categoria.trim().toLowerCase()}_${m.nombre.trim().toLowerCase()}';
+        final key =
+            '${m.categoria.trim().toLowerCase()}_${m.nombre.trim().toLowerCase()}';
         materialMap[key] = m;
       }
 
       final importedItems = <MaterialItem>[];
       for (var index = 0; index < result.rows.length; index++) {
         final row = result.rows[index];
-        final key = '${row.categoria.trim().toLowerCase()}_${row.nombre.trim().toLowerCase()}';
+        final key =
+            '${row.categoria.trim().toLowerCase()}_${row.nombre.trim().toLowerCase()}';
         final existing = materialMap[key];
 
         if (existing != null) {
@@ -152,10 +159,12 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
 
       if (!mounted) return;
       final importedCount = importedItems.length;
-      final errorSummary = result.hasErrors ? ' Algunas filas se omitieron por errores.' : '';
+      final errorSummary =
+          result.hasErrors ? ' Algunas filas se omitieron por errores.' : '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Se importaron $importedCount material${importedCount == 1 ? '' : 'es'}.$errorSummary'),
+          content: Text(
+              'Se importaron $importedCount material${importedCount == 1 ? '' : 'es'}.$errorSummary'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -165,7 +174,9 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      _showImportErrors(['No se pudo leer el archivo Excel seleccionado. Verifica que sea un .xlsx válido.']);
+      _showImportErrors([
+        'No se pudo leer el archivo Excel seleccionado. Verifica que sea un .xlsx válido.'
+      ]);
     } finally {
       if (mounted) {
         setState(() {
@@ -189,10 +200,13 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: errors.take(8).map<Widget>((error) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text('• $error'),
-                )).toList()
+                children: errors
+                    .take(8)
+                    .map<Widget>((error) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text('• $error'),
+                        ))
+                    .toList()
                   ..addAll(
                     errors.length > 8
                         ? [
@@ -200,7 +214,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                               padding: const EdgeInsets.only(top: 4, bottom: 8),
                               child: Text(
                                 'Y ${errors.length - 8} error${errors.length - 8 == 1 ? '' : 'es'} más.',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             )
                           ]
@@ -239,7 +254,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('¿Eliminar material?'),
-          content: Text('¿Estás seguro de que deseas eliminar "${item.nombre}"? Se borrará de tus materiales frecuentes.'),
+          content: Text(
+              '¿Estás seguro de que deseas eliminar "${item.nombre}"? Se borrará de tus materiales frecuentes.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -247,7 +263,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<MaterialsProvider>(context, listen: false).deleteMaterial(item.id);
+                Provider.of<MaterialsProvider>(context, listen: false)
+                    .deleteMaterial(item.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -256,7 +273,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                   ),
                 );
               },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -264,7 +282,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     );
   }
 
-  Map<String, List<MaterialItem>> _groupMaterialsByCategoria(List<MaterialItem> materials) {
+  Map<String, List<MaterialItem>> _groupMaterialsByCategoria(
+      List<MaterialItem> materials) {
     final grouped = <String, List<MaterialItem>>{};
     for (final mat in materials) {
       final key = mat.categoria.isEmpty ? 'Sin categoría' : mat.categoria;
@@ -278,7 +297,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     final materialsProvider = Provider.of<MaterialsProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final accentColor = themeProvider.lightAccent;
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final normalizedQuery = _searchQuery.toLowerCase();
 
     final filteredMaterials = materialsProvider.materials.where((m) {
@@ -351,7 +371,9 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _searchQuery.isEmpty ? Icons.inventory_2_outlined : Icons.search_off,
+                          _searchQuery.isEmpty
+                              ? Icons.inventory_2_outlined
+                              : Icons.search_off,
                           size: 64,
                           color: Theme.of(context).colorScheme.outlineVariant,
                         ),
@@ -377,17 +399,21 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                 : ListView(
                     children: groupedMaterials.entries.map((entry) {
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
                         child: ExpansionTile(
                           key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
                           initiallyExpanded: _searchQuery.isNotEmpty,
-                          leading: Icon(Icons.shopping_bag_outlined, color: accentColor),
+                          leading: Icon(Icons.shopping_bag_outlined,
+                              color: accentColor),
                           title: Text(
                             entry.key,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('${entry.value.length} material${entry.value.length == 1 ? '' : 'es'}'),
-                          children: entry.value.asMap().entries.map((itemEntry) {
+                          subtitle: Text(
+                              '${entry.value.length} material${entry.value.length == 1 ? '' : 'es'}'),
+                          children:
+                              entry.value.asMap().entries.map((itemEntry) {
                             final index = itemEntry.key;
                             final item = itemEntry.value;
                             final hasPrice = item.ultimoPrecio != null;
@@ -399,15 +425,20 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                                     thickness: 0.5,
                                     indent: 16,
                                     endIndent: 16,
-                                    color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant
+                                        .withOpacity(0.5),
                                   ),
                                 ListTile(
                                   title: Text(
                                     item.nombre,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 4),
                                       Text('Categoría: ${item.categoria}'),
@@ -418,10 +449,16 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                                             : 'Sin precio de referencia',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          fontWeight: hasPrice ? FontWeight.bold : FontWeight.normal,
+                                          fontWeight: hasPrice
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                           color: hasPrice
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Theme.of(context).colorScheme.outline,
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .outline,
                                         ),
                                       ),
                                     ],
@@ -449,9 +486,12 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
                                         value: 'delete',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.delete, color: Colors.red, size: 18),
+                                            Icon(Icons.delete,
+                                                color: Colors.red, size: 18),
                                             SizedBox(width: 8),
-                                            Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                            Text('Eliminar',
+                                                style: TextStyle(
+                                                    color: Colors.red)),
                                           ],
                                         ),
                                       ),
@@ -563,10 +603,16 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
     final provider = Provider.of<MaterialsProvider>(context, listen: false);
     _nombreController = TextEditingController(text: widget.item?.nombre ?? '');
     _precioController = TextEditingController(
-      text: widget.item?.ultimoPrecio != null ? widget.item!.ultimoPrecio!.toStringAsFixed(0) : '',
+      text: widget.item?.ultimoPrecio != null
+          ? widget.item!.ultimoPrecio!.toStringAsFixed(0)
+          : '',
     );
     _selectedCategoria = widget.item?.categoria ?? defaultCategoria;
-    _availableCategorias = <String>{...provider.categorias, _selectedCategoria, defaultCategoria}.toList()
+    _availableCategorias = <String>{
+      ...provider.categorias,
+      _selectedCategoria,
+      defaultCategoria
+    }.toList()
       ..sort((a, b) {
         if (a == defaultCategoria) return -1;
         if (b == defaultCategoria) return 1;
@@ -594,7 +640,8 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
     final accentColor = themeProvider.lightAccent;
 
     return AlertDialog(
-      title: Text(widget.item == null ? 'Nuevo Material Frecuente' : 'Editar Material'),
+      title: Text(
+          widget.item == null ? 'Nuevo Material Frecuente' : 'Editar Material'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -612,12 +659,14 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.category_outlined),
                       ),
-                      items: _availableCategorias.map(
-                        (c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(c),
-                        ),
-                      ).toList(),
+                      items: _availableCategorias
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (value) {
                         if (value != null) {
                           setState(() {
@@ -629,7 +678,8 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: Icon(Icons.add_circle_outline, size: 28, color: accentColor),
+                    icon: Icon(Icons.add_circle_outline,
+                        size: 28, color: accentColor),
                     tooltip: 'Nueva categoría',
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     constraints: const BoxConstraints(),
@@ -638,7 +688,10 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
                       if (newCategory == null || newCategory.isEmpty) return;
                       setState(() {
                         _selectedCategoria = newCategory;
-                        _availableCategorias = <String>{..._availableCategorias, newCategory}.toList()
+                        _availableCategorias = <String>{
+                          ..._availableCategorias,
+                          newCategory
+                        }.toList()
                           ..sort((a, b) {
                             if (a == defaultCategoria) return -1;
                             if (b == defaultCategoria) return 1;
@@ -698,21 +751,26 @@ class _AddEditMaterialDialogState extends State<_AddEditMaterialDialog> {
         FilledButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              final provider = Provider.of<MaterialsProvider>(context, listen: false);
+              final provider =
+                  Provider.of<MaterialsProvider>(context, listen: false);
               final nombre = _nombreController.text.trim();
               final priceText = _precioController.text.trim();
-              final price = priceText.isNotEmpty ? double.parse(priceText) : null;
+              final price =
+                  priceText.isNotEmpty ? double.parse(priceText) : null;
 
               if (widget.item == null) {
                 provider.addMaterial(nombre, _selectedCategoria, price);
               } else {
-                provider.updateMaterial(widget.item!.id, nombre, _selectedCategoria, price);
+                provider.updateMaterial(
+                    widget.item!.id, nombre, _selectedCategoria, price);
               }
 
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(widget.item == null ? 'Material guardado' : 'Material actualizado'),
+                  content: Text(widget.item == null
+                      ? 'Material guardado'
+                      : 'Material actualizado'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );

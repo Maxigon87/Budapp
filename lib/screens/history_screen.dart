@@ -16,7 +16,8 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _statusFilter = 'Todos'; // 'Todos', 'Pendiente', 'Aceptado', 'Rechazado'
+  String _statusFilter =
+      'Todos'; // 'Todos', 'Pendiente', 'Aceptado', 'Rechazado'
   DateTimeRange? _dateRangeFilter;
 
   @override
@@ -28,7 +29,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _showQuoteDetails(Quote quote) {
     final company = Provider.of<CompanyProvider>(context, listen: false);
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     showModalBottomSheet(
@@ -82,10 +84,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         children: [
                           Text(
                             "Presupuesto #${quote.number}",
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            icon: const Icon(Icons.delete_outline,
+                                color: Colors.red),
                             onPressed: () {
                               Navigator.pop(context); // Close bottom sheet
                               _confirmDeleteQuote(quote);
@@ -98,19 +104,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       // Status Modifier Row
                       Row(
                         children: [
-                          const Text("Estado: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("Estado: ",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(width: 8),
                           DropdownButton<String>(
                             value: quote.status,
-                            icon: Icon(Icons.arrow_drop_down, color: statusColor),
-                            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                            icon:
+                                Icon(Icons.arrow_drop_down, color: statusColor),
+                            style: TextStyle(
+                                color: statusColor,
+                                fontWeight: FontWeight.bold),
                             underline: Container(
                               height: 2,
                               color: statusColor,
                             ),
                             onChanged: (String? newValue) {
                               if (newValue != null) {
-                                quotesProvider.updateQuoteStatus(quote.id, newValue);
+                                quotesProvider.updateQuoteStatus(
+                                    quote.id, newValue);
                                 setModalState(() {
                                   // Update state in modal
                                   // Since quote reference is final, we re-fetch quote data or just redraw
@@ -118,12 +129,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 setState(() {
                                   // Refresh parent screen too
                                 });
-                                Navigator.pop(context); // Close and reopen to update full details safely
-                                _showQuoteDetails(quotesProvider.quotes.firstWhere((q) => q.id == quote.id));
+                                Navigator.pop(
+                                    context); // Close and reopen to update full details safely
+                                _showQuoteDetails(quotesProvider.quotes
+                                    .firstWhere((q) => q.id == quote.id));
                               }
                             },
-                            items: <String>['Pendiente', 'Aceptado', 'Rechazado']
-                                .map<DropdownMenuItem<String>>((String value) {
+                            items: <String>[
+                              'Pendiente',
+                              'Aceptado',
+                              'Rechazado'
+                            ].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -135,23 +151,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       const Divider(height: 32),
 
                       // Date & Client Details
-                      Text("INFORMACIÓN DEL CLIENTE", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text("INFORMACIÓN DEL CLIENTE",
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text("Nombre: ${quote.clientName}", style: const TextStyle(fontSize: 15)),
+                      Text("Nombre: ${quote.clientName}",
+                          style: const TextStyle(fontSize: 15)),
                       if (quote.clientPhone.isNotEmpty)
-                        Text("Teléfono: ${quote.clientPhone}", style: const TextStyle(fontSize: 15)),
+                        Text("Teléfono: ${quote.clientPhone}",
+                            style: const TextStyle(fontSize: 15)),
                       if (quote.clientAddress.isNotEmpty)
-                        Text("Dirección: ${quote.clientAddress}", style: const TextStyle(fontSize: 15)),
-                      Text("Fecha: ${dateFormat.format(quote.date)}", style: const TextStyle(fontSize: 15)),
-                      
+                        Text("Dirección: ${quote.clientAddress}",
+                            style: const TextStyle(fontSize: 15)),
+                      Text("Fecha: ${dateFormat.format(quote.date)}",
+                          style: const TextStyle(fontSize: 15)),
+
                       const Divider(height: 32),
 
                       // Services Table
-                      Text("DETALLE DE SERVICIOS", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text("DETALLE DE SERVICIOS",
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Table(
                         border: TableBorder(
-                          horizontalInside: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
+                          horizontalInside: BorderSide(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                              width: 0.5),
                         ),
                         columnWidths: const {
                           0: FlexColumnWidth(0.6), // Cantidad
@@ -163,32 +194,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             return TableRow(
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Text(
                                     "${item.quantity}x",
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(item.name),
                                       Text(
                                         "${currencyFormat.format(item.price)} c/u",
-                                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600]),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
                                   child: Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
-                                      currencyFormat.format(item.price * item.quantity),
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                      currencyFormat
+                                          .format(item.price * item.quantity),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
                                     ),
                                   ),
                                 ),
@@ -212,9 +252,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                       if (quote.observations.isNotEmpty) ...[
                         const Divider(height: 32),
-                        Text("OBSERVACIONES", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Text("OBSERVACIONES",
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelMedium
+                                ?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Text(quote.observations, style: const TextStyle(fontStyle: FontStyle.italic)),
+                        Text(quote.observations,
+                            style:
+                                const TextStyle(fontStyle: FontStyle.italic)),
                       ],
 
                       const Divider(height: 32),
@@ -225,7 +271,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () async {
-                                final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                final pdfBytes =
+                                    await PdfGenerator.generateQuotePdf(
+                                        company: company, quote: quote);
                                 await Printing.layoutPdf(
                                   onLayout: (format) => pdfBytes,
                                   name: 'presupuesto_${quote.number}',
@@ -239,7 +287,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Expanded(
                             child: FilledButton.icon(
                               onPressed: () async {
-                                final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                final pdfBytes =
+                                    await PdfGenerator.generateQuotePdf(
+                                        company: company, quote: quote);
                                 await Printing.sharePdf(
                                   bytes: pdfBytes,
                                   filename: 'presupuesto_${quote.number}.pdf',
@@ -269,7 +319,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('¿Eliminar presupuesto?'),
-          content: Text('¿Estás seguro de que deseas eliminar el presupuesto N° ${quote.number} de ${quote.clientName}? Esta acción no se puede deshacer.'),
+          content: Text(
+              '¿Estás seguro de que deseas eliminar el presupuesto N° ${quote.number} de ${quote.clientName}? Esta acción no se puede deshacer.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -277,7 +328,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<QuotesProvider>(context, listen: false).deleteQuote(quote.id);
+                Provider.of<QuotesProvider>(context, listen: false)
+                    .deleteQuote(quote.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -286,7 +338,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 );
               },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -324,24 +377,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final quotesProvider = Provider.of<QuotesProvider>(context);
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
 
     // Apply Search and Filters
     final filteredQuotes = quotesProvider.quotes.where((quote) {
       // 1. Client Search filter
-      final matchesQuery = quote.clientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          quote.number.contains(_searchQuery);
+      final matchesQuery =
+          quote.clientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              quote.number.contains(_searchQuery);
 
       // 2. Status filter
-      final matchesStatus = _statusFilter == 'Todos' || quote.status == _statusFilter;
+      final matchesStatus =
+          _statusFilter == 'Todos' || quote.status == _statusFilter;
 
       // 3. Date Range filter
       bool matchesDate = true;
       if (_dateRangeFilter != null) {
         // Start date starts at 00:00:00
-        final start = DateTime(_dateRangeFilter!.start.year, _dateRangeFilter!.start.month, _dateRangeFilter!.start.day);
+        final start = DateTime(_dateRangeFilter!.start.year,
+            _dateRangeFilter!.start.month, _dateRangeFilter!.start.day);
         // End date ends at 23:59:59
-        final end = DateTime(_dateRangeFilter!.end.year, _dateRangeFilter!.end.month, _dateRangeFilter!.end.day, 23, 59, 59);
+        final end = DateTime(_dateRangeFilter!.end.year,
+            _dateRangeFilter!.end.month, _dateRangeFilter!.end.day, 23, 59, 59);
         matchesDate = quote.date.isAfter(start) && quote.date.isBefore(end);
       }
 
@@ -356,7 +414,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           // Filter Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               children: [
                 // Client/Number Search field
@@ -369,7 +428,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -384,7 +444,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButtonHideUnderline(
@@ -397,8 +458,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           });
                         }
                       },
-                      items: <String>['Todos', 'Pendiente', 'Aceptado', 'Rechazado']
-                          .map<DropdownMenuItem<String>>((String value) {
+                      items: <String>[
+                        'Todos',
+                        'Pendiente',
+                        'Aceptado',
+                        'Rechazado'
+                      ].map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
@@ -413,7 +478,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
           // Date Filter Badge Row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             child: Row(
               children: [
                 InputChip(
@@ -435,7 +501,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       : null,
                 ),
                 const SizedBox(width: 8),
-                if (_searchQuery.isNotEmpty || _statusFilter != 'Todos' || _dateRangeFilter != null)
+                if (_searchQuery.isNotEmpty ||
+                    _statusFilter != 'Todos' ||
+                    _dateRangeFilter != null)
                   TextButton(
                     onPressed: () {
                       setState(() {
@@ -450,7 +518,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ],
             ),
           ),
-          
+
           const Divider(),
 
           // History List
@@ -486,7 +554,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     itemBuilder: (context, index) {
                       final quote = filteredQuotes[index];
                       final dateFormat = DateFormat('dd/MM/yyyy');
-                      
+
                       Color statusColor;
                       switch (quote.status) {
                         case 'Aceptado':
@@ -500,22 +568,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       }
 
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
                         child: ListTile(
                           onTap: () => _showQuoteDetails(quote),
                           title: Row(
                             children: [
                               Text(
                                 "N° ${quote.number}",
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 1.5),
                                 decoration: BoxDecoration(
                                   color: statusColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: statusColor.withOpacity(0.4)),
+                                  border: Border.all(
+                                      color: statusColor.withOpacity(0.4)),
                                 ),
                                 child: Text(
                                   quote.status,

@@ -23,13 +23,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
   static const XTypeGroup _excelTypeGroup = XTypeGroup(
     label: 'Excel',
     extensions: ['xlsx'],
-    mimeTypes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    mimeTypes: [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ],
   );
 
   bool _isImportingServices = false;
 
   Future<void> _downloadServicesTemplate() async {
-    final services = Provider.of<ServicesProvider>(context, listen: false).services;
+    final services =
+        Provider.of<ServicesProvider>(context, listen: false).services;
     final rows = services
         .map(
           (service) => ServiceExcelRow(
@@ -80,7 +83,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
 
       final file = XFile.fromData(
         bytes,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         name: 'base_servicios.xlsx',
       );
       await file.saveTo(saveLocation.path);
@@ -96,7 +100,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   Future<void> _importServicesFromExcel() async {
-    final selectedFile = await openFile(acceptedTypeGroups: const [_excelTypeGroup]);
+    final selectedFile =
+        await openFile(acceptedTypeGroups: const [_excelTypeGroup]);
     if (selectedFile == null) return;
 
     setState(() {
@@ -111,13 +116,17 @@ class _ServicesScreenState extends State<ServicesScreen> {
         return;
       }
 
-      final importedCount = await Provider.of<ServicesProvider>(context, listen: false).importServices(result.rows);
+      final importedCount =
+          await Provider.of<ServicesProvider>(context, listen: false)
+              .importServices(result.rows);
       if (!mounted) return;
 
-      final errorSummary = result.hasErrors ? ' Algunas filas se omitieron por errores.' : '';
+      final errorSummary =
+          result.hasErrors ? ' Algunas filas se omitieron por errores.' : '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Se importaron $importedCount servicio${importedCount == 1 ? '' : 's'}.$errorSummary'),
+          content: Text(
+              'Se importaron $importedCount servicio${importedCount == 1 ? '' : 's'}.$errorSummary'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -127,7 +136,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      _showImportErrors(['No se pudo leer el archivo Excel seleccionado. Verifica que sea un .xlsx válido.']);
+      _showImportErrors([
+        'No se pudo leer el archivo Excel seleccionado. Verifica que sea un .xlsx válido.'
+      ]);
     } finally {
       if (mounted) {
         setState(() {
@@ -151,10 +162,13 @@ class _ServicesScreenState extends State<ServicesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: errors.take(8).map<Widget>((error) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text('• $error'),
-                )).toList()
+                children: errors
+                    .take(8)
+                    .map<Widget>((error) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text('• $error'),
+                        ))
+                    .toList()
                   ..addAll(
                     errors.length > 8
                         ? [
@@ -162,7 +176,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               padding: const EdgeInsets.only(top: 4, bottom: 8),
                               child: Text(
                                 'Y ${errors.length - 8} error${errors.length - 8 == 1 ? '' : 'es'} más.',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             )
                           ]
@@ -201,7 +216,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('¿Eliminar servicio?'),
-          content: Text('¿Estás seguro de que deseas eliminar "${item.name}"? Se borrará de tus servicios frecuentes.'),
+          content: Text(
+              '¿Estás seguro de que deseas eliminar "${item.name}"? Se borrará de tus servicios frecuentes.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -209,7 +225,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
             ),
             TextButton(
               onPressed: () {
-                Provider.of<ServicesProvider>(context, listen: false).deleteService(item.id);
+                Provider.of<ServicesProvider>(context, listen: false)
+                    .deleteService(item.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -218,7 +235,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   ),
                 );
               },
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              child:
+                  const Text('Eliminar', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -226,7 +244,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 
-  Map<String, List<ServiceItem>> _groupServicesByCategory(List<ServiceItem> services) {
+  Map<String, List<ServiceItem>> _groupServicesByCategory(
+      List<ServiceItem> services) {
     final groupedServices = <String, List<ServiceItem>>{};
     for (final service in services) {
       groupedServices.putIfAbsent(service.category, () => []).add(service);
@@ -239,7 +258,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final servicesProvider = Provider.of<ServicesProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final accentColor = themeProvider.lightAccent;
-    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final normalizedQuery = _searchQuery.toLowerCase();
 
     final filteredServices = servicesProvider.services.where((service) {
@@ -312,7 +332,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _searchQuery.isEmpty ? Icons.engineering_outlined : Icons.search_off,
+                          _searchQuery.isEmpty
+                              ? Icons.engineering_outlined
+                              : Icons.search_off,
                           size: 64,
                           color: Theme.of(context).colorScheme.outlineVariant,
                         ),
@@ -338,17 +360,21 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 : ListView(
                     children: groupedServices.entries.map((entry) {
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
                         child: ExpansionTile(
                           key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
                           initiallyExpanded: _searchQuery.isNotEmpty,
-                          leading: Icon(Icons.category_outlined, color: accentColor),
+                          leading:
+                              Icon(Icons.category_outlined, color: accentColor),
                           title: Text(
                             entry.key,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
-                          children: entry.value.asMap().entries.map((itemEntry) {
+                          subtitle: Text(
+                              '${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
+                          children:
+                              entry.value.asMap().entries.map((itemEntry) {
                             final index = itemEntry.key;
                             final item = itemEntry.value;
                             return Column(
@@ -359,15 +385,20 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                     thickness: 0.5,
                                     indent: 16,
                                     endIndent: 16,
-                                    color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant
+                                        .withOpacity(0.5),
                                   ),
                                 ListTile(
                                   title: Text(
                                     item.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 4),
                                       Text(item.category),
@@ -377,7 +408,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.primary,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                         ),
                                       ),
                                     ],
@@ -405,9 +438,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                         value: 'delete',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.delete, color: Colors.red, size: 18),
+                                            Icon(Icons.delete,
+                                                color: Colors.red, size: 18),
                                             SizedBox(width: 8),
-                                            Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                            Text('Eliminar',
+                                                style: TextStyle(
+                                                    color: Colors.red)),
                                           ],
                                         ),
                                       ),
@@ -520,12 +556,13 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
       text: widget.item != null ? widget.item!.price.toStringAsFixed(0) : '',
     );
     _selectedCategory = widget.item?.category ?? ServiceItem.defaultCategory;
-    _availableCategories = <String>{...provider.categories, _selectedCategory}.toList()
-      ..sort((a, b) {
-        if (a == ServiceItem.defaultCategory) return -1;
-        if (b == ServiceItem.defaultCategory) return 1;
-        return a.toLowerCase().compareTo(b.toLowerCase());
-      });
+    _availableCategories =
+        <String>{...provider.categories, _selectedCategory}.toList()
+          ..sort((a, b) {
+            if (a == ServiceItem.defaultCategory) return -1;
+            if (b == ServiceItem.defaultCategory) return 1;
+            return a.toLowerCase().compareTo(b.toLowerCase());
+          });
   }
 
   @override
@@ -548,7 +585,8 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
     final accentColor = themeProvider.lightAccent;
 
     return AlertDialog(
-      title: Text(widget.item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
+      title: Text(
+          widget.item == null ? 'Nuevo Servicio Frecuente' : 'Editar Servicio'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -566,12 +604,14 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.category_outlined),
                       ),
-                      items: _availableCategories.map(
-                        (category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ),
-                      ).toList(),
+                      items: _availableCategories
+                          .map(
+                            (category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (value) {
                         if (value != null) {
                           setState(() {
@@ -583,7 +623,8 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    icon: Icon(Icons.add_circle_outline, size: 28, color: accentColor),
+                    icon: Icon(Icons.add_circle_outline,
+                        size: 28, color: accentColor),
                     tooltip: 'Nueva categoría',
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     constraints: const BoxConstraints(),
@@ -592,7 +633,10 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
                       if (newCategory == null || newCategory.isEmpty) return;
                       setState(() {
                         _selectedCategory = newCategory;
-                        _availableCategories = <String>{..._availableCategories, newCategory}.toList()
+                        _availableCategories = <String>{
+                          ..._availableCategories,
+                          newCategory
+                        }.toList()
                           ..sort((a, b) {
                             if (a == ServiceItem.defaultCategory) return -1;
                             if (b == ServiceItem.defaultCategory) return 1;
@@ -653,20 +697,24 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
         FilledButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
-              final provider = Provider.of<ServicesProvider>(context, listen: false);
+              final provider =
+                  Provider.of<ServicesProvider>(context, listen: false);
               final name = _nameController.text.trim();
               final price = double.parse(_priceController.text);
 
               if (widget.item == null) {
                 provider.addService(name, price, _selectedCategory);
               } else {
-                provider.updateService(widget.item!.id, name, price, _selectedCategory);
+                provider.updateService(
+                    widget.item!.id, name, price, _selectedCategory);
               }
 
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(widget.item == null ? 'Servicio guardado' : 'Servicio actualizado'),
+                  content: Text(widget.item == null
+                      ? 'Servicio guardado'
+                      : 'Servicio actualizado'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -678,4 +726,3 @@ class _AddEditServiceDialogState extends State<_AddEditServiceDialog> {
     );
   }
 }
-

@@ -42,7 +42,9 @@ class ServiceItem {
     return ServiceItem(
       id: (map['id'] ?? '') as String,
       name: (map['name'] ?? '') as String,
-      price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
+      price: (map['price'] is int)
+          ? (map['price'] as int).toDouble()
+          : (map['price'] ?? 0.0) as double,
       category: _normalizeCategory(map['category']),
       userId: (map['userId'] ?? 'guest') as String,
       syncStatus: (map['syncStatus'] ?? 'synced') as String,
@@ -77,8 +79,10 @@ class ServicesProvider extends ChangeNotifier {
   }
 
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
-  FirebaseFirestore? get _firestore => _isFirebaseAvailable ? FirebaseFirestore.instance : null;
-  FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
+  FirebaseFirestore? get _firestore =>
+      _isFirebaseAvailable ? FirebaseFirestore.instance : null;
+  FirebaseAuth? get _auth =>
+      _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
   String get _currentUserId {
     final auth = _auth;
@@ -102,7 +106,8 @@ class ServicesProvider extends ChangeNotifier {
     }
     // Sort services by category, then alphabetically by name
     list.sort((a, b) {
-      final categoryComparison = a.category.toLowerCase().compareTo(b.category.toLowerCase());
+      final categoryComparison =
+          a.category.toLowerCase().compareTo(b.category.toLowerCase());
       if (categoryComparison != 0) return categoryComparison;
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
@@ -149,7 +154,8 @@ class ServicesProvider extends ChangeNotifier {
     // Create a map to lookup services by category and name for duplicate check
     final serviceMap = <String, ServiceItem>{};
     for (final s in services) {
-      final key = '${s.category.trim().toLowerCase()}_${s.name.trim().toLowerCase()}';
+      final key =
+          '${s.category.trim().toLowerCase()}_${s.name.trim().toLowerCase()}';
       serviceMap[key] = s;
     }
 
@@ -157,7 +163,8 @@ class ServicesProvider extends ChangeNotifier {
       final row = rows[index];
       final normalizedCategory = _normalizeCategory(row.category);
       final normalizedName = row.name.trim();
-      final key = '${normalizedCategory.toLowerCase()}_${normalizedName.toLowerCase()}';
+      final key =
+          '${normalizedCategory.toLowerCase()}_${normalizedName.toLowerCase()}';
 
       final existing = serviceMap[key];
       if (existing != null) {
@@ -202,7 +209,8 @@ class ServicesProvider extends ChangeNotifier {
     return importedItems.length;
   }
 
-  Future<void> updateService(String id, String name, double price, String category) async {
+  Future<void> updateService(
+      String id, String name, double price, String category) async {
     final currentUid = _currentUserId;
     final item = ServiceItem(
       id: id,
@@ -352,7 +360,9 @@ class ServicesProvider extends ChangeNotifier {
 
       for (var i = 0; i < allServices.length; i += batchSize) {
         final batch = firestore.batch();
-        final end = (i + batchSize < allServices.length) ? i + batchSize : allServices.length;
+        final end = (i + batchSize < allServices.length)
+            ? i + batchSize
+            : allServices.length;
         final chunk = allServices.sublist(i, end);
 
         for (var item in chunk) {
@@ -478,7 +488,8 @@ class ServicesProvider extends ChangeNotifier {
       final value = _box.get(key);
       if (value is Map) {
         final item = ServiceItem.fromMap(value);
-        if (item.userId == uid && (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
+        if (item.userId == uid &&
+            (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
           return true;
         }
       }

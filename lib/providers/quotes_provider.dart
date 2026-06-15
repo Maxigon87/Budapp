@@ -34,7 +34,9 @@ class QuoteItem {
   factory QuoteItem.fromMap(Map<dynamic, dynamic> map) {
     return QuoteItem(
       name: (map['name'] ?? '') as String,
-      price: (map['price'] is int) ? (map['price'] as int).toDouble() : (map['price'] ?? 0.0) as double,
+      price: (map['price'] is int)
+          ? (map['price'] as int).toDouble()
+          : (map['price'] ?? 0.0) as double,
       quantity: (map['quantity'] ?? 1) as int,
       isMaterial: (map['isMaterial'] ?? false) as bool,
       unidad: map['unidad'] as String?,
@@ -97,12 +99,15 @@ class Quote {
     return Quote(
       id: (map['id'] ?? '') as String,
       number: (map['number'] ?? '') as String,
-      date: DateTime.parse((map['date'] ?? DateTime.now().toIso8601String()) as String),
+      date: DateTime.parse(
+          (map['date'] ?? DateTime.now().toIso8601String()) as String),
       clientName: (map['clientName'] ?? '') as String,
       clientPhone: (map['clientPhone'] ?? '') as String,
       clientAddress: (map['clientAddress'] ?? '') as String,
       items: itemsList,
-      total: (map['total'] is int) ? (map['total'] as int).toDouble() : (map['total'] ?? 0.0) as double,
+      total: (map['total'] is int)
+          ? (map['total'] as int).toDouble()
+          : (map['total'] ?? 0.0) as double,
       status: (map['status'] ?? 'Pendiente') as String,
       observations: (map['observations'] ?? '') as String,
       userId: (map['userId'] ?? 'guest') as String,
@@ -133,8 +138,10 @@ class QuotesProvider extends ChangeNotifier {
   }
 
   bool get _isFirebaseAvailable => Firebase.apps.isNotEmpty;
-  FirebaseFirestore? get _firestore => _isFirebaseAvailable ? FirebaseFirestore.instance : null;
-  FirebaseAuth? get _auth => _isFirebaseAvailable ? FirebaseAuth.instance : null;
+  FirebaseFirestore? get _firestore =>
+      _isFirebaseAvailable ? FirebaseFirestore.instance : null;
+  FirebaseAuth? get _auth =>
+      _isFirebaseAvailable ? FirebaseAuth.instance : null;
 
   String get _currentUserId {
     final auth = _auth;
@@ -208,7 +215,7 @@ class QuotesProvider extends ChangeNotifier {
       final updatedMap = Map<dynamic, dynamic>.from(quoteMap);
       updatedMap['status'] = newStatus;
       updatedMap['syncStatus'] = currentUid == 'guest' ? 'synced' : 'pending';
-      
+
       await _box.put(id, updatedMap);
       notifyListeners();
 
@@ -357,7 +364,9 @@ class QuotesProvider extends ChangeNotifier {
 
       for (var i = 0; i < allQuotes.length; i += batchSize) {
         final batch = firestore.batch();
-        final end = (i + batchSize < allQuotes.length) ? i + batchSize : allQuotes.length;
+        final end = (i + batchSize < allQuotes.length)
+            ? i + batchSize
+            : allQuotes.length;
         final chunk = allQuotes.sublist(i, end);
 
         for (var quote in chunk) {
@@ -495,7 +504,8 @@ class QuotesProvider extends ChangeNotifier {
       final value = _box.get(key);
       if (value is Map) {
         final item = Quote.fromMap(value);
-        if (item.userId == uid && (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
+        if (item.userId == uid &&
+            (item.syncStatus == 'pending' || item.syncStatus == 'deleted')) {
           return true;
         }
       }
