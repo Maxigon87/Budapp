@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/services_provider.dart';
 import '../utils/services_excel_importer.dart';
-import 'dart:io';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import '../providers/theme_provider.dart';
+import '../utils/file_helper.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -41,58 +40,19 @@ class _ServicesScreenState extends State<ServicesScreen> {
         .toList();
     final bytes = ServicesExcelImporter.buildTemplate(rows: rows);
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      try {
-        final directory = await getTemporaryDirectory();
-        final tempFilePath = '${directory.path}/base_servicios.xlsx';
-        final file = File(tempFilePath);
-        await file.writeAsBytes(bytes);
+    saveFile(
+      bytes,
+      'base_servicios.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
 
-        await Share.shareXFiles(
-          [XFile(tempFilePath)],
-          subject: 'Base de Servicios - Budapp',
-        );
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compartiendo base de servicios...'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al exportar base: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } else {
-      final saveLocation = await getSaveLocation(
-        acceptedTypeGroups: const [_excelTypeGroup],
-        suggestedName: 'base_servicios.xlsx',
-      );
-
-      if (saveLocation == null) return;
-
-      final file = XFile.fromData(
-        bytes,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        name: 'base_servicios.xlsx',
-      );
-      await file.saveTo(saveLocation.path);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Archivo de servicios descargado'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Plantilla de servicios exportada'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _importServicesFromExcel() async {
@@ -242,6 +202,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final normalizedQuery = _searchQuery.toLowerCase();
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+
     final filteredServices = servicesProvider.services.where((service) {
       return service.name.toLowerCase().contains(normalizedQuery) ||
           service.category.toLowerCase().contains(normalizedQuery);
@@ -270,159 +233,164 @@ class _ServicesScreenState extends State<ServicesScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar servicio o categoría...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-          ),
-
-          // Services List
-          Expanded(
-            child: filteredServices.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _searchQuery.isEmpty ? Icons.engineering_outlined : Icons.search_off,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'Aún no has guardado servicios frecuentes'
-                              : 'No se encontraron servicios',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 4),
-                        if (_searchQuery.isEmpty)
-                          Text(
-                            'Agrega servicios por categoría para autocompletar tus presupuestos',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                          ),
-                      ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWide ? 1000 : double.infinity),
+          child: Column(
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar servicio o categoría...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              });
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : ListView(
-                    children: groupedServices.entries.map((entry) {
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        child: ExpansionTile(
-                          key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
-                          initiallyExpanded: _searchQuery.isNotEmpty,
-                          leading: Icon(Icons.category_outlined, color: accentColor),
-                          title: Text(
-                            entry.key,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
-                          children: entry.value.asMap().entries.map((itemEntry) {
-                            final index = itemEntry.key;
-                            final item = itemEntry.value;
-                            return Column(
-                              children: [
-                                if (index > 0)
-                                  Divider(
-                                    height: 1,
-                                    thickness: 0.5,
-                                    indent: 16,
-                                    endIndent: 16,
-                                    color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-                                  ),
-                                ListTile(
-                                  title: Text(
-                                    item.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 4),
-                                      Text(item.category),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        currencyFormat.format(item.price),
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'edit') {
-                                        _showAddEditDialog(item: item);
-                                      } else if (value == 'delete') {
-                                        _confirmDelete(item);
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(
-                                        value: 'edit',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.edit, size: 18),
-                                            SizedBox(width: 8),
-                                            Text('Editar'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'delete',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.delete, color: Colors.red, size: 18),
-                                            SizedBox(width: 8),
-                                            Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      );
-                    }).toList(),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+    
+              // Services List
+              Expanded(
+                child: filteredServices.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _searchQuery.isEmpty ? Icons.engineering_outlined : Icons.search_off,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.outlineVariant,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? 'Aún no has guardado servicios frecuentes'
+                                  : 'No se encontraron servicios',
+                              style: const TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 4),
+                            if (_searchQuery.isEmpty)
+                              Text(
+                                'Agrega servicios por categoría para autocompletar tus presupuestos',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                    : ListView(
+                        children: groupedServices.entries.map((entry) {
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            child: ExpansionTile(
+                              key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
+                              initiallyExpanded: _searchQuery.isNotEmpty,
+                              leading: Icon(Icons.category_outlined, color: accentColor),
+                              title: Text(
+                                entry.key,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
+                              children: entry.value.asMap().entries.map((itemEntry) {
+                                final index = itemEntry.key;
+                                final item = itemEntry.value;
+                                return Column(
+                                  children: [
+                                    if (index > 0)
+                                      Divider(
+                                        height: 1,
+                                        thickness: 0.5,
+                                        indent: 16,
+                                        endIndent: 16,
+                                        color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                                      ),
+                                    ListTile(
+                                      title: Text(
+                                        item.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(item.category),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            currencyFormat.format(item.price),
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context).colorScheme.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: PopupMenuButton<String>(
+                                        onSelected: (value) {
+                                          if (value == 'edit') {
+                                            _showAddEditDialog(item: item);
+                                          } else if (value == 'delete') {
+                                            _confirmDelete(item);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.edit, size: 18),
+                                                SizedBox(width: 8),
+                                                Text('Editar'),
+                                              ],
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete, color: Colors.red, size: 18),
+                                                SizedBox(width: 8),
+                                                Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),

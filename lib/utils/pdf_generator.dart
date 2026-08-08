@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -15,7 +17,15 @@ class PdfGenerator {
     
     // Load Logo if available
     pw.ImageProvider? logoImage;
-    if (company.logoPath != null && company.logoPath!.isNotEmpty) {
+    final logoBase64 = company.logoBase64;
+    if (logoBase64 != null && logoBase64.isNotEmpty) {
+      try {
+        final bytes = base64Decode(logoBase64);
+        logoImage = pw.MemoryImage(bytes);
+      } catch (e) {
+        print("Error decoding logo for PDF: $e");
+      }
+    } else if (!kIsWeb && company.logoPath != null && company.logoPath!.isNotEmpty) {
       try {
         final file = File(company.logoPath!);
         if (await file.exists()) {

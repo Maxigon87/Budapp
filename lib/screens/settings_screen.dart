@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _emailController;
   late TextEditingController _websiteController;
   String? _logoPath;
+  Uint8List? _logoBytes;
 
   // Firebase Auth Controllers
   final _authEmailController = TextEditingController();
@@ -66,8 +69,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         imageQuality: 85,
       );
       if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
           _logoPath = pickedFile.path;
+          _logoBytes = bytes;
         });
       }
     } catch (e) {
@@ -135,7 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           phone: _phoneController.text.trim(),
           email: _emailController.text.trim(),
           website: _websiteController.text.trim(),
-          logoPath: _logoPath,
+          logoPath: kIsWeb ? null : _logoPath,
+          logoBytes: _logoBytes,
         );
 
         if (mounted) {
@@ -321,424 +327,476 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final companyProvider = Provider.of<CompanyProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth > 900;
+
+    // 1. Company profile form card
+    Widget companyProfileCard = Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Perfil de la Empresa / Técnico',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              // Logo Picker Section
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                      backgroundImage: _logoBytes != null 
+                          ? MemoryImage(_logoBytes!) 
+                          : (companyProvider.logoBytes != null 
+                              ? MemoryImage(companyProvider.logoBytes!) 
+                              : (_logoPath != null && !kIsWeb 
+                                  ? FileImage(File(_logoPath!)) 
+                                  : null)) as ImageProvider?,
+                      child: (_logoBytes == null && companyProvider.logoBytes == null && _logoPath == null)
+                          ? Icon(
+                              Icons.business,
+                              size: 40,
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            )
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        backgroundColor: const Color(0xFF2563EB),
+                        radius: 16,
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                          onPressed: _pickLogo,
+                        ),
+                      ),
+                    ),
+                    if (_logoBytes != null || companyProvider.logoBytes != null || _logoPath != null)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: CircleAvatar(
+                          backgroundColor: const Color(0xFFDC2626),
+                          radius: 14,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, size: 12, color: Colors.white),
+                            onPressed: () {
+                              setState(() {
+                                _logoPath = null;
+                                _logoBytes = null;
+                              });
+                              companyProvider.clearLogo();
+                            },
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Form Fields
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre Comercial *',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Ingresa el nombre comercial' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Dirección Comercial *',
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Ingresa la dirección' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono de Contacto *',
+                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                    value == null || value.trim().isEmpty ? 'Ingresa el teléfono' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo Electrónico *',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Ingresa el correo electrónico';
+                  }
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    return 'Ingresa un correo electrónico válido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _websiteController,
+                decoration: const InputDecoration(
+                  labelText: 'Sitio Web (Opcional)',
+                  prefixIcon: Icon(Icons.language_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _saveCompanyInfo,
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Guardar Datos Perfil'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // 2. Cloud settings card
+    Widget firebaseSyncCard = Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Sincronización en la Nube (Firebase)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Respalda tus presupuestos y base de servicios de forma segura para recuperarlos en cualquier dispositivo.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+            const Divider(height: 24),
+
+            if (authProvider.isAuthenticated) ...[
+              // Logged in state
+              Row(
+                children: [
+                  const Icon(Icons.cloud_done_outlined, color: Color(0xFF16A34A)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Sesión Iniciada",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          authProvider.user?.email ?? '',
+                          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => authProvider.signOut(),
+                    child: const Text('Salir', style: TextStyle(color: Color(0xFFDC2626))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Backup and Restore Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _syncData(false), // Restore / Download
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      label: const Text("Restaurar"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _syncData(true), // Backup / Upload
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: const Text("Respaldar"),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Logged out / offline state
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _isSignUpMode ? 'Crear Cuenta' : 'Iniciar Sesión',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isSignUpMode = !_isSignUpMode;
+                      });
+                    },
+                    child: Text(_isSignUpMode ? '¿Ya tienes cuenta? Ingresa' : '¿No tienes cuenta? Regístrate'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              TextFormField(
+                controller: _authEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo Electrónico',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _authPasswordController,
+                decoration: const InputDecoration(
+                  labelText: 'Contraseña (mín. 6 caracteres)',
+                  prefixIcon: Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
+
+              if (authProvider.isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _handleAuthAction,
+                    icon: Icon(_isSignUpMode ? Icons.person_add_outlined : Icons.login_outlined),
+                    label: Text(_isSignUpMode ? 'Registrarse y Conectar' : 'Iniciar Sesión'),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    // 3. Offline local backup card
+    Widget localBackupCard = Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Copia de Seguridad Offline (Local)',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) de forma local sin usar internet.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+            const Divider(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const BackupRestoreScreen()),
+                  );
+                },
+                icon: const Icon(Icons.sd_storage_outlined),
+                label: const Text('Gestionar Copias Locales'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // 4. Color customization card
+    Widget themeCustomizationCard = Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Aspecto y Personalización',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Elige el color principal de la aplicación para adaptarlo a la identidad de tu empresa.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+            const Divider(height: 24),
+            
+            // Horizontal color list picker
+            SizedBox(
+              height: 56,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: ThemeProvider.themeColors.length,
+                itemBuilder: (context, index) {
+                  final themeColor = ThemeProvider.themeColors[index];
+                  final isSelected = themeProvider.colorIndex == index;
+                  final colorAccentColor = themeColor.lightColor;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                    child: InkWell(
+                      onTap: () {
+                        themeProvider.setColorIndex(index);
+                      },
+                      borderRadius: BorderRadius.circular(28),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: colorAccentColor.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? colorAccentColor : Theme.of(context).colorScheme.outlineVariant,
+                            width: isSelected ? 3.0 : 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: colorAccentColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 14,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'Color seleccionado: ${themeProvider.currentThemeColor.name}',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (isWideScreen) {
+      return Scaffold(
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Profile settings form
+              Expanded(
+                flex: 1,
+                child: SingleChildScrollView(
+                  child: companyProfileCard,
+                ),
+              ),
+              const SizedBox(width: 24),
+              // Right Column: Cloud, backups, theme customization
+              Expanded(
+                flex: 1,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      firebaseSyncCard,
+                      const SizedBox(height: 16),
+                      localBackupCard,
+                      const SizedBox(height: 16),
+                      themeCustomizationCard,
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Section 1: Company Profile Form
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Perfil de la Empresa / Técnico',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Logo Picker Section
-                    Center(
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 48,
-                            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                            backgroundImage: _logoPath != null ? FileImage(File(_logoPath!)) : null,
-                            child: _logoPath == null
-                                ? Icon(
-                                    Icons.business,
-                                    size: 40,
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                  )
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              backgroundColor: const Color(0xFF2563EB),
-                              radius: 16,
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
-                                onPressed: _pickLogo,
-                              ),
-                            ),
-                          ),
-                          if (_logoPath != null)
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: CircleAvatar(
-                                backgroundColor: const Color(0xFFDC2626),
-                                radius: 14,
-                                child: IconButton(
-                                  icon: const Icon(Icons.close, size: 12, color: Colors.white),
-                                  onPressed: () {
-                                    setState(() {
-                                      _logoPath = null;
-                                    });
-                                    companyProvider.clearLogo();
-                                  },
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Form Fields
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre Comercial *',
-                        prefixIcon: Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa el nombre comercial' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección Comercial *',
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa la dirección' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Teléfono de Contacto *',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa el teléfono' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo Electrónico *',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Ingresa el correo electrónico';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Ingresa un correo electrónico válido';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _websiteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Sitio Web (Opcional)',
-                        prefixIcon: Icon(Icons.language_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
-                    ),
-                    const SizedBox(height: 16),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _saveCompanyInfo,
-                        icon: const Icon(Icons.save_outlined),
-                        label: const Text('Guardar Datos Perfil'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          companyProfileCard,
           const SizedBox(height: 16),
-
-          // Section 2: Firebase Cloud Sync (Version 4)
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sincronización en la Nube (Firebase)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Respalda tus presupuestos y base de servicios de forma segura para recuperarlos en cualquier dispositivo.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                  const Divider(height: 24),
-
-                  if (authProvider.isAuthenticated) ...[
-                    // Logged in state
-                    Row(
-                      children: [
-                        const Icon(Icons.cloud_done_outlined, color: Color(0xFF16A34A)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Sesión Iniciada",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                authProvider.user?.email ?? '',
-                                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
-                              ),
-                            ],
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => authProvider.signOut(),
-                          child: const Text('Salir', style: TextStyle(color: Color(0xFFDC2626))),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Backup and Restore Actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _syncData(false), // Restore / Download
-                            icon: const Icon(Icons.cloud_download_outlined),
-                            label: const Text("Restaurar"),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: () => _syncData(true), // Backup / Upload
-                            icon: const Icon(Icons.cloud_upload_outlined),
-                            label: const Text("Respaldar"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    // Logged out / offline state
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _isSignUpMode ? 'Crear Cuenta' : 'Iniciar Sesión',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _isSignUpMode = !_isSignUpMode;
-                            });
-                          },
-                          child: Text(_isSignUpMode ? '¿Ya tienes cuenta? Ingresa' : '¿No tienes cuenta? Regístrate'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    TextFormField(
-                      controller: _authEmailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo Electrónico',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _authPasswordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Contraseña (mín. 6 caracteres)',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (authProvider.isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _handleAuthAction,
-                          icon: Icon(_isSignUpMode ? Icons.person_add_outlined : Icons.login_outlined),
-                          label: Text(_isSignUpMode ? 'Registrarse y Conectar' : 'Iniciar Sesión'),
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          // Section 3: Offline Local Backup
+          firebaseSyncCard,
           const SizedBox(height: 16),
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Copia de Seguridad Offline (Local)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) de forma local sin usar internet.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                  const Divider(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BackupRestoreScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.sd_storage_outlined),
-                      label: const Text('Gestionar Copias Locales'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          localBackupCard,
           const SizedBox(height: 16),
-
-          // Section 4: Color customization
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Aspecto y Personalización',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Elige el color principal de la aplicación para adaptarlo a la identidad de tu empresa.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                  const Divider(height: 24),
-                  
-                  // Horizontal color list picker
-                  SizedBox(
-                    height: 56,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: ThemeProvider.themeColors.length,
-                      itemBuilder: (context, index) {
-                        final themeColor = ThemeProvider.themeColors[index];
-                        final isSelected = themeProvider.colorIndex == index;
-                        final colorAccentColor = themeColor.lightColor;
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                          child: InkWell(
-                            onTap: () {
-                              themeProvider.setColorIndex(index);
-                            },
-                            borderRadius: BorderRadius.circular(28),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: colorAccentColor.withOpacity(0.12),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected ? colorAccentColor : Theme.of(context).colorScheme.outlineVariant,
-                                  width: isSelected ? 3.0 : 1.5,
-                                ),
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: colorAccentColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 14,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      'Color seleccionado: ${themeProvider.currentThemeColor.name}',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          themeCustomizationCard,
           const SizedBox(height: 40),
         ],
       ),

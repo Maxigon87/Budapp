@@ -1,16 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../providers/company_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/theme_provider.dart';
+import '../utils/file_helper.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
   const BackupRestoreScreen({super.key});
@@ -78,20 +77,16 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final bytes = utf8.encode(jsonString);
 
       // Save/Share file
-      final directory = await getTemporaryDirectory();
-      final backupFilePath = '${directory.path}/respaldo_completo_budapp.json';
-      final file = File(backupFilePath);
-      await file.writeAsBytes(bytes);
-
-      await Share.shareXFiles(
-        [XFile(backupFilePath)],
-        subject: 'Respaldo de Base de Datos - Budapp',
+      saveFile(
+        bytes,
+        'respaldo_completo_budapp.json',
+        'application/json',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Copia de seguridad compartida con éxito'),
+            content: Text('Copia de seguridad exportada con éxito'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -244,151 +239,159 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final accentColor = themeProvider.lightAccent;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Copias de Seguridad Offline'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20.0),
-        children: [
-          // Header info card
-          Card(
-            elevation: 0,
-            color: accentColor.withOpacity(0.08),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: accentColor.withOpacity(0.2), width: 1.2),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Icon(Icons.sd_storage_outlined, size: 48, color: accentColor),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Respaldo Local Completo',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Esta opción te permite exportar un archivo con todos los datos de tu aplicación (perfil de empresa, logotipo, base de servicios y presupuestos) para guardarlo localmente o transferirlo a otro dispositivo sin necesidad de usar internet o una cuenta en la nube.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF4B5563),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Actions list
-          Text(
-            'Acciones locales',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          // Export Card Button
-          Card(
-            child: InkWell(
-              onTap: _isExporting ? null : _exportBackup,
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+          child: ListView(
+            padding: const EdgeInsets.all(20.0),
+            children: [
+              // Header info card
+              Card(
+                elevation: 0,
+                color: accentColor.withOpacity(0.08),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: accentColor.withOpacity(0.2), width: 1.2),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Icon(Icons.sd_storage_outlined, size: 48, color: accentColor),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Respaldo Local Completo',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      child: Icon(Icons.upload_outlined, color: accentColor),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Crear y Exportar Respaldo',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Genera un archivo .json con toda tu información para guardar o compartir.',
-                            style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
-                          ),
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        'Esta opción te permite exportar un archivo con todos los datos de tu aplicación (perfil de empresa, logotipo, base de servicios y presupuestos) para guardarlo localmente o transferirlo a otro dispositivo sin necesidad de usar internet o una cuenta en la nube.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF4B5563),
+                        ),
                       ),
-                    ),
-                    if (_isExporting)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      const Icon(Icons.chevron_right, size: 20),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Import Card Button
-          Card(
-            child: InkWell(
-              onTap: _isImporting ? null : _importBackup,
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.download_outlined, color: Color(0xFF16A34A)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Restaurar desde Respaldo',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              const SizedBox(height: 32),
+    
+              // Actions list
+              Text(
+                'Acciones locales',
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+    
+              // Export Card Button
+              Card(
+                child: InkWell(
+                  onTap: _isExporting ? null : _exportBackup,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Selecciona un archivo .json de respaldo para recuperar tus datos.',
-                            style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+                          child: Icon(Icons.upload_outlined, color: accentColor),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Crear y Exportar Respaldo',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Genera un archivo .json con toda tu información para guardar o compartir.',
+                                style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        if (_isExporting)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          const Icon(Icons.chevron_right, size: 20),
+                      ],
                     ),
-                    if (_isImporting)
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      const Icon(Icons.chevron_right, size: 20),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 12),
+    
+              // Import Card Button
+              Card(
+                child: InkWell(
+                  onTap: _isImporting ? null : _importBackup,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF16A34A).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.download_outlined, color: Color(0xFF16A34A)),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Restaurar desde Respaldo',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Selecciona un archivo .json de respaldo para recuperar tus datos.',
+                                style: TextStyle(fontSize: 12, color: theme.colorScheme.outline),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_isImporting)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          const Icon(Icons.chevron_right, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

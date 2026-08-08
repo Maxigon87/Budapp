@@ -18,6 +18,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _searchQuery = '';
   String _statusFilter = 'Todos'; // 'Todos', 'Pendiente', 'Aceptado', 'Rechazado'
   DateTimeRange? _dateRangeFilter;
+  Quote? _selectedQuote;
 
   @override
   void dispose() {
@@ -321,6 +322,344 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  Widget _buildFiltersSection() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por cliente o N°...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _statusFilter,
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _statusFilter = newValue;
+                        });
+                      }
+                    },
+                    items: <String>['Todos', 'Pendiente', 'Aceptado', 'Rechazado']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+          child: Row(
+            children: [
+              InputChip(
+                label: Text(
+                  _dateRangeFilter == null
+                      ? 'Cualquier fecha'
+                      : '${DateFormat('dd/MM').format(_dateRangeFilter!.start)} - ${DateFormat('dd/MM').format(_dateRangeFilter!.end)}',
+                ),
+                avatar: _dateRangeFilter == null
+                    ? const Icon(Icons.calendar_month, size: 16)
+                    : null,
+                onPressed: _selectDateRange,
+                onDeleted: _dateRangeFilter != null
+                    ? () {
+                        setState(() {
+                          _dateRangeFilter = null;
+                        });
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 8),
+              if (_searchQuery.isNotEmpty || _statusFilter != 'Todos' || _dateRangeFilter != null)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                      _statusFilter = 'Todos';
+                      _dateRangeFilter = null;
+                    });
+                  },
+                  child: const Text('Limpiar', style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildEmptySearchState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_outlined,
+              size: 48,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No se encontraron presupuestos',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Aceptado':
+        return const Color(0xFF16A34A);
+      case 'Rechazado':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFFF59E0B);
+    }
+  }
+
+  Widget _buildStatusBadge(String status, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuoteDetailPane(Quote quote) {
+    final company = Provider.of<CompanyProvider>(context);
+    final quotesProvider = Provider.of<QuotesProvider>(context);
+    final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    
+    Color statusColor = _getStatusColor(quote.status);
+
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Presupuesto #${quote.number}",
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () => _confirmDeleteQuote(quote),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text("Estado: ", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(width: 8),
+              DropdownButton<String>(
+                value: quote.status,
+                icon: Icon(Icons.arrow_drop_down, color: statusColor),
+                style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                underline: Container(
+                  height: 2,
+                  color: statusColor,
+                ),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    quotesProvider.updateQuoteStatus(quote.id, newValue);
+                    setState(() {
+                      _selectedQuote = quotesProvider.quotes.firstWhere((q) => q.id == quote.id);
+                    });
+                  }
+                },
+                items: <String>['Pendiente', 'Aceptado', 'Rechazado']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          const Divider(height: 32),
+          
+          Expanded(
+            child: ListView(
+              children: [
+                Text("INFORMACIÓN DEL CLIENTE", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text("Nombre: ${quote.clientName}", style: const TextStyle(fontSize: 15)),
+                if (quote.clientPhone.isNotEmpty)
+                  Text("Teléfono: ${quote.clientPhone}", style: const TextStyle(fontSize: 15)),
+                if (quote.clientAddress.isNotEmpty)
+                  Text("Dirección: ${quote.clientAddress}", style: const TextStyle(fontSize: 15)),
+                Text("Fecha: ${dateFormat.format(quote.date)}", style: const TextStyle(fontSize: 15)),
+                
+                const Divider(height: 32),
+                
+                Text("DETALLE DE SERVICIOS", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Table(
+                  border: TableBorder(
+                    horizontalInside: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
+                  ),
+                  columnWidths: const {
+                    0: FlexColumnWidth(0.6), // Cantidad
+                    1: FlexColumnWidth(3.0), // Detalle
+                    2: FlexColumnWidth(1.4), // Subtotal
+                  },
+                  children: [
+                    ...quote.items.map((item) {
+                      return TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              "${item.quantity}x",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item.name),
+                                Text(
+                                  "${currencyFormat.format(item.price)} c/u",
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                currencyFormat.format(item.price * item.quantity),
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    "Total: ${currencyFormat.format(quote.total)}",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                
+                if (quote.observations.isNotEmpty) ...[
+                  const Divider(height: 32),
+                  Text("OBSERVACIONES", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(quote.observations, style: const TextStyle(fontStyle: FontStyle.italic)),
+                ],
+              ],
+            ),
+          ),
+          
+          const Divider(height: 32),
+          
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                    await Printing.layoutPdf(
+                      onLayout: (format) => pdfBytes,
+                      name: 'presupuesto_${quote.number}',
+                    );
+                  },
+                  icon: const Icon(Icons.print),
+                  label: const Text("Imprimir / Guardar"),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                    await Printing.sharePdf(
+                      bytes: pdfBytes,
+                      filename: 'presupuesto_${quote.number}.pdf',
+                    );
+                  },
+                  icon: const Icon(Icons.share),
+                  label: const Text("Compartir"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final quotesProvider = Provider.of<QuotesProvider>(context);
@@ -347,6 +686,135 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       return matchesQuery && matchesStatus && matchesDate;
     }).toList();
+
+    // Auto-select first quote if none selected and list is not empty on wide screen
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
+    if (isWide && _selectedQuote == null && filteredQuotes.isNotEmpty) {
+      _selectedQuote = filteredQuotes.first;
+    }
+    // Also, if the selected quote is deleted, reset selection
+    if (_selectedQuote != null && !quotesProvider.quotes.any((q) => q.id == _selectedQuote!.id)) {
+      _selectedQuote = filteredQuotes.isNotEmpty ? filteredQuotes.first : null;
+    }
+
+    if (isWide) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Historial de Presupuestos'),
+        ),
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Column: List of quotes with filters
+            Expanded(
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    right: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Search & filters
+                    _buildFiltersSection(),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: filteredQuotes.isEmpty
+                          ? _buildEmptySearchState()
+                          : ListView.builder(
+                              itemCount: filteredQuotes.length,
+                              itemBuilder: (context, index) {
+                                final quote = filteredQuotes[index];
+                                final dateFormat = DateFormat('dd/MM/yyyy');
+                                final isSelected = _selectedQuote?.id == quote.id;
+                                
+                                Color statusColor = _getStatusColor(quote.status);
+
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary.withOpacity(0.06)
+                                      : null,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.outlineVariant,
+                                      width: isSelected ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedQuote = quote;
+                                      });
+                                    },
+                                    title: Row(
+                                      children: [
+                                        Text(
+                                          "N° ${quote.number}",
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _buildStatusBadge(quote.status, statusColor),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      "${quote.clientName}\n${dateFormat.format(quote.date)}",
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    trailing: Text(
+                                      currencyFormat.format(quote.total),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Right Column: Details of the selected quote
+            Expanded(
+              flex: 3,
+              child: _selectedQuote == null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            "Selecciona un presupuesto de la lista\npara ver su detalle completo.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _buildQuoteDetailPane(_selectedQuote!),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(

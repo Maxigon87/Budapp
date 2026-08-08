@@ -29,17 +29,17 @@ void main() async {
   // Try initializing Firebase
   try {
     FirebaseOptions firebaseOptions;
-    if (kIsWeb || Platform.isWindows) {
+    if (kIsWeb || (!kIsWeb && Platform.isWindows)) {
       // CONFIGURACIÓN DE FIREBASE PARA WINDOWS / WEB
       // IMPORTANTE: Para Windows/Web se debe registrar una "Web App" en la consola de Firebase.
-      // Reemplaza 'YOUR_WEB_APP_ID' con el appId de la Web App registrada.
       firebaseOptions = const FirebaseOptions(
         apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY", 
-        appId: "YOUR_WEB_APP_ID", // TODO: Cambiar por el ID de la App Web
+        appId: "1:562409321853:web:644a86f9166f272a3d9061", // ID por defecto de Web App
         messagingSenderId: "562409321853",
-        projectId: "budapp-98294",
-        storageBucket: "budapp-98294.firebasestorage.app",
+        projectId: "mgz-app-98294",
+        storageBucket: "mgz-app-98294.firebasestorage.app",
       );
+      await Firebase.initializeApp(options: firebaseOptions);
     } else {
       // CONFIGURACIÓN DE FIREBASE PARA ANDROID / IOS
       // Lee automáticamente del archivo google-services.json o GoogleService-Info.plist

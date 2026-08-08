@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,6 +25,20 @@ class CompanyProvider extends ChangeNotifier {
 
   String? _resolvedLogoPath;
   String? get logoPath => _resolvedLogoPath;
+
+  String? get logoBase64 => _box.get('logoBase64') as String?;
+
+  Uint8List? get logoBytes {
+    final base64Logo = logoBase64;
+    if (base64Logo != null && base64Logo.isNotEmpty) {
+      try {
+        return base64Decode(base64Logo);
+      } catch (e) {
+        debugPrint("Error decoding logoBytes: $e");
+      }
+    }
+    return null;
+  }
 
   CompanyProvider() {
     _initLogoPath();
@@ -51,7 +66,7 @@ class CompanyProvider extends ChangeNotifier {
     final oldLogoPath = _box.get('logoPath') as String?;
     final hasLogoKey = _box.containsKey('hasLogo');
     
-    if (oldLogoPath != null && !hasLogoKey) {
+    if (oldLogoPath != null && !hasLogoKey && !kIsWeb) {
       try {
         final file = File(oldLogoPath);
         if (file.existsSync()) {
@@ -65,6 +80,11 @@ class CompanyProvider extends ChangeNotifier {
         debugPrint("Failed to migrate old logo: $e");
       }
       await _box.delete('logoPath');
+    }
+
+    if (kIsWeb) {
+      notifyListeners();
+      return;
     }
 
     final hasLogo = _box.get('hasLogo', defaultValue: false) as bool;
@@ -106,6 +126,7 @@ class CompanyProvider extends ChangeNotifier {
     required String email,
     required String website,
     String? logoPath,
+    Uint8List? logoBytes,
   }) async {
     await _box.put('name', name);
     await _box.put('address', address);
@@ -113,7 +134,25 @@ class CompanyProvider extends ChangeNotifier {
     await _box.put('email', email);
     await _box.put('website', website);
 
-    if (logoPath != null && logoPath.isNotEmpty) {
+    if (logoBytes != null && logoBytes.isNotEmpty) {
+      try {
+        final compressedBytes = await _resizeLogo(logoBytes);
+        final base64Logo = base64Encode(compressedBytes);
+        await _box.put('logoBase64', base64Logo);
+        await _box.put('hasLogo', true);
+
+        if (!kIsWeb) {
+          final directory = await getApplicationDocumentsDirectory();
+          final permanentPath = '${directory.path}/company_logo.png';
+          await File(permanentPath).writeAsBytes(compressedBytes);
+          _resolvedLogoPath = permanentPath;
+        } else {
+          _resolvedLogoPath = null;
+        }
+      } catch (e) {
+        debugPrint("Error saving logo: $e");
+      }
+    } else if (logoPath != null && logoPath.isNotEmpty && !kIsWeb) {
       try {
         final directory = await getApplicationDocumentsDirectory();
         final permanentPath = '${directory.path}/company_logo.png';
@@ -133,18 +172,20 @@ class CompanyProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint("Error saving logo file: $e");
       }
-    } else {
+    } else if (logoPath == null && logoBytes == null) {
       await _box.put('hasLogo', false);
       await _box.delete('logoBase64');
       _resolvedLogoPath = null;
-      try {
-        final directory = await getApplicationDocumentsDirectory();
-        final file = File('${directory.path}/company_logo.png');
-        if (file.existsSync()) {
-          await file.delete();
+      if (!kIsWeb) {
+        try {
+          final directory = await getApplicationDocumentsDirectory();
+          final file = File('${directory.path}/company_logo.png');
+          if (file.existsSync()) {
+            await file.delete();
+          }
+        } catch (e) {
+          debugPrint("Error deleting logo file: $e");
         }
-      } catch (e) {
-        debugPrint("Error deleting logo file: $e");
       }
     }
 
@@ -158,14 +199,16 @@ class CompanyProvider extends ChangeNotifier {
     await _box.put('hasLogo', false);
     await _box.delete('logoBase64');
     _resolvedLogoPath = null;
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/company_logo.png');
-      if (file.existsSync()) {
-        await file.delete();
+    if (!kIsWeb) {
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/company_logo.png');
+        if (file.existsSync()) {
+          await file.delete();
+        }
+      } catch (e) {
+        debugPrint("Error deleting logo file: $e");
       }
-    } catch (e) {
-      debugPrint("Error deleting logo file: $e");
     }
     notifyListeners();
     
@@ -233,26 +276,32 @@ class CompanyProvider extends ChangeNotifier {
             await _box.put('logoBase64', logoBase64);
             await _box.put('hasLogo', true);
             
-            final directory = await getApplicationDocumentsDirectory();
-            _resolvedLogoPath = '${directory.path}/company_logo.png';
-            try {
-              final bytes = base64Decode(logoBase64);
-              await File(_resolvedLogoPath!).writeAsBytes(bytes);
-            } catch (e) {
-              debugPrint("Error writing downloaded logo file: $e");
+            if (!kIsWeb) {
+              final directory = await getApplicationDocumentsDirectory();
+              _resolvedLogoPath = '${directory.path}/company_logo.png';
+              try {
+                final bytes = base64Decode(logoBase64);
+                await File(_resolvedLogoPath!).writeAsBytes(bytes);
+              } catch (e) {
+                debugPrint("Error writing downloaded logo file: $e");
+              }
+            } else {
+              _resolvedLogoPath = null;
             }
           } else {
             await _box.put('hasLogo', false);
             await _box.delete('logoBase64');
             _resolvedLogoPath = null;
-            try {
-              final directory = await getApplicationDocumentsDirectory();
-              final file = File('${directory.path}/company_logo.png');
-              if (file.existsSync()) {
-                await file.delete();
+            if (!kIsWeb) {
+              try {
+                final directory = await getApplicationDocumentsDirectory();
+                final file = File('${directory.path}/company_logo.png');
+                if (file.existsSync()) {
+                  await file.delete();
+                }
+              } catch (e) {
+                debugPrint("Error deleting logo file: $e");
               }
-            } catch (e) {
-              debugPrint("Error deleting logo file: $e");
             }
           }
           notifyListeners();

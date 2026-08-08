@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -121,6 +122,7 @@ class HomeScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final accentColor = themeProvider.lightAccent;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     final allQuotes = quotesProvider.quotes;
     final recentQuotes = allQuotes.take(5).toList();
@@ -143,6 +145,508 @@ class HomeScreen extends StatelessWidget {
     final primaryText = colorScheme.onSurface;
     final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
     final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
+
+    final isWideScreen = screenWidth > 900;
+
+    if (isWideScreen) {
+      return Scaffold(
+        backgroundColor: pageBackground,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column: Company header + Totals + Stats + Actions
+              Expanded(
+                flex: 5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title/Header Bar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.asset(
+                                'assets/images/budapp-logo.png',
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.receipt_long_outlined,
+                                  color: Color(0xFF1E3A8A),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Panel de Control",
+                              style: TextStyle(
+                                color: primaryText,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  authProvider.isAuthenticated
+                                      ? "Sincronización activa con ${authProvider.user?.email}"
+                                      : "Trabajando en almacenamiento local. Configura la nube en Ajustes.",
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: Icon(
+                            authProvider.isAuthenticated ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                            size: 16,
+                            color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                          ),
+                          label: Text(
+                            authProvider.isAuthenticated ? "Nube" : "Local",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: authProvider.isAuthenticated
+                                ? const Color(0xFF16A34A).withOpacity(0.08)
+                                : const Color(0xFFF59E0B).withOpacity(0.08),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Company Info Row
+                    Row(
+                      children: [
+                        if (company.logoBytes != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.memory(
+                              company.logoBytes!,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        else if (company.logoPath != null && !kIsWeb)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(company.logoPath!),
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => _buildDefaultCompanyLogo(context),
+                            ),
+                          )
+                        else
+                          _buildDefaultCompanyLogo(context),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                company.name.isNotEmpty ? company.name : "Nombre de tu Empresa",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                  color: primaryText,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                company.isConfigured 
+                                    ? "${company.email} | ${company.phone}" 
+                                    : "Configura los datos de tu empresa en la pestaña Ajustes",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: secondaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(color: colorScheme.outlineVariant, height: 1),
+                    const SizedBox(height: 20),
+
+                    // Missing company profile warning
+                    if (!company.isConfigured)
+                      Card(
+                        color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5), width: 1),
+                        ),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 24),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Faltan Datos de la Empresa",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? const Color(0xFFFECACA) : const Color(0xFF991B1B),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "Configura tu logo de negocio y contacto en Ajustes para incluirlos en los presupuestos generados.",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF7F1D1D),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // 2. Earnings Card
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isDark ? Colors.white.withOpacity(0.24) : Colors.transparent,
+                          width: isDark ? 1.2 : 0,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF1E3A8A), // Deep Corporate Blue
+                              Color(0xFF0F172A), // Dark Midnight Blue
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: IncomeChartPainter(),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(22.0),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          "💰 Ingresos Totales",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        Icon(Icons.trending_up, color: Colors.white.withOpacity(0.9), size: 20),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Text(
+                                      currencyFormat.format(totalEarnings),
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "${acceptedQuotes.length} presupuestos aprobados",
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.85),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 3. Stats Grid
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Emitidos",
+                              value: totalQuotesCount.toString(),
+                              subtitle: "Presupuestos totales",
+                              icon: Icons.description_outlined,
+                              iconColor: accentColor,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              title: "Pendientes",
+                              value: pendingQuotes.length.toString(),
+                              subtitle: "Esperando aprobación",
+                              icon: Icons.hourglass_empty,
+                              iconColor: const Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // 4. Quick Actions
+                      Text(
+                        "⚡ Acciones Rápidas",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryText,
+                          fontSize: 14,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              context,
+                              label: "Nuevo Presupuesto",
+                              icon: Icons.add_circle_outline,
+                              iconColor: accentColor,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              context,
+                              label: "Ir al Historial",
+                              icon: Icons.history,
+                              iconColor: const Color(0xFFF59E0B),
+                              onTap: () {
+                                final mainState = context.findAncestorStateOfType<MainScreenState>();
+                                if (mainState != null) {
+                                  mainState.setSelectedIndex(1);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 32),
+                
+                // Right Column: Recent Quotes
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Presupuestos Recientes",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: primaryText,
+                                fontSize: 16,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            FilledButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.add, size: 14, color: Colors.white),
+                              label: const Text(
+                                "Nuevo",
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                backgroundColor: accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (recentQuotes.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40.0),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.receipt_long_outlined, size: 48, color: accentColor),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Sin presupuestos todavía",
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: primaryText),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Crea tu primer presupuesto para comenzar.",
+                                    style: TextStyle(color: secondaryText, fontSize: 13),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: recentQuotes.length,
+                            itemBuilder: (context, index) {
+                              final quote = recentQuotes[index];
+                              Color statusColor;
+                              switch (quote.status) {
+                                case 'Aceptado':
+                                  statusColor = const Color(0xFF16A34A);
+                                  break;
+                                case 'Rechazado':
+                                  statusColor = const Color(0xFF6B7280);
+                                  break;
+                                default:
+                                  statusColor = const Color(0xFFF59E0B);
+                              }
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.8),
+                                ),
+                                child: ListTile(
+                                  onTap: () => _showQuoteDetails(context, quote),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  leading: Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          quote.clientName,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: primaryText,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        currencyFormat.format(quote.total),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: primaryText,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "Presupuesto #${quote.number} (${quote.status})",
+                                          style: TextStyle(fontSize: 11, color: secondaryText),
+                                        ),
+                                        Text(
+                                          _getTimeElapsed(quote.date),
+                                          style: TextStyle(fontSize: 10, color: mutedText),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+    }
 
     return Scaffold(
       backgroundColor: pageBackground,
@@ -863,6 +1367,196 @@ class HomeScreen extends StatelessWidget {
     final quotesProvider = Provider.of<QuotesProvider>(context, listen: false);
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final isWide = MediaQuery.of(context).size.width > 900;
+
+    if (isWide) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              Color statusColor;
+              switch (quote.status) {
+                case 'Aceptado':
+                  statusColor = const Color(0xFF16A34A);
+                  break;
+                case 'Rechazado':
+                  statusColor = const Color(0xFFDC2626);
+                  break;
+                default:
+                  statusColor = const Color(0xFFF59E0B);
+              }
+
+              return Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  padding: const EdgeInsets.all(24.0),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Presupuesto #${quote.number}",
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close dialog
+                                    _confirmDeleteQuote(context, quote);
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => Navigator.pop(context),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text("Estado: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 8),
+                            DropdownButton<String>(
+                              value: quote.status,
+                              icon: Icon(Icons.arrow_drop_down, color: statusColor),
+                              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+                              underline: Container(
+                                height: 2,
+                                color: statusColor,
+                              ),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  quotesProvider.updateQuoteStatus(quote.id, newValue);
+                                  Navigator.pop(context); // Close and reopen to update safely
+                                  final updatedQuote = quotesProvider.quotes.firstWhere((q) => q.id == quote.id);
+                                  _showQuoteDetails(context, updatedQuote);
+                                }
+                              },
+                              items: <String>['Pendiente', 'Aceptado', 'Rechazado']
+                                  .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 32),
+                        Text("INFORMACIÓN DEL CLIENTE", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text("Nombre: ${quote.clientName}", style: const TextStyle(fontSize: 15)),
+                        if (quote.clientPhone.isNotEmpty)
+                          Text("Teléfono: ${quote.clientPhone}", style: const TextStyle(fontSize: 15)),
+                        if (quote.clientAddress.isNotEmpty)
+                          Text("Dirección: ${quote.clientAddress}", style: const TextStyle(fontSize: 15)),
+                        Text("Fecha: ${dateFormat.format(quote.date)}", style: const TextStyle(fontSize: 15)),
+                        const Divider(height: 32),
+                        Text("DETALLE DE SERVICIOS", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Table(
+                          border: TableBorder(
+                            horizontalInside: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 0.5),
+                          ),
+                          columnWidths: const {
+                            0: FlexColumnWidth(3),
+                            1: FlexColumnWidth(1),
+                          },
+                          children: [
+                            ...quote.items.map((item) {
+                              return TableRow(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Text(item.name),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        currencyFormat.format(item.price),
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            "Total: ${currencyFormat.format(quote.total)}",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        if (quote.observations.isNotEmpty) ...[
+                          const Divider(height: 32),
+                          Text("OBSERVACIONES", style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text(quote.observations, style: const TextStyle(fontStyle: FontStyle.italic)),
+                        ],
+                        const Divider(height: 32),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                  await Printing.layoutPdf(
+                                    onLayout: (format) => pdfBytes,
+                                    name: 'presupuesto_${quote.number}',
+                                  );
+                                },
+                                icon: const Icon(Icons.print),
+                                label: const Text("Imprimir / Guardar"),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  final pdfBytes = await PdfGenerator.generateQuotePdf(company: company, quote: quote);
+                                  await Printing.sharePdf(
+                                    bytes: pdfBytes,
+                                    filename: 'presupuesto_${quote.number}.pdf',
+                                  );
+                                },
+                                icon: const Icon(Icons.share),
+                                label: const Text("Compartir"),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
