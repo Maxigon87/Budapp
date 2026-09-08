@@ -14,39 +14,33 @@ class MercadoPagoService {
     if (accessToken.trim().isEmpty) return null;
 
     try {
+      // Calculate discount multiplier to apply directly to each item's unit price
+      final double discountMultiplier = 1.0 - (quote.discountPercentage / 100.0);
+
       // Build items array from quote items
       final List<Map<String, dynamic>> itemsPayload = quote.items.map((item) {
         return {
           'title': item.name,
           'quantity': item.quantity,
-          'unit_price': item.price,
+          'unit_price': item.price * discountMultiplier,
           'currency_id': 'ARS',
         };
       }).toList();
 
-      // If quote has a discount, add a discount item with negative total
-      final subtotal = quote.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
-      final discountAmount = subtotal * (quote.discountPercentage / 100.0);
-      if (discountAmount > 0) {
-        itemsPayload.add({
-          'title': quote.discountReason.isNotEmpty
-              ? 'Descuento (${quote.discountReason})'
-              : 'Descuento aplicado',
-          'quantity': 1,
-          'unit_price': -discountAmount,
-          'currency_id': 'ARS',
-        });
+      final Map<String, dynamic> payer = {
+        'name': quote.clientName,
+      };
+
+      if (quote.clientPhone.trim().isNotEmpty) {
+        payer['phone'] = {
+          'number': quote.clientPhone.trim(),
+        };
       }
 
       final body = {
         'items': itemsPayload,
         'external_reference': quote.number.isNotEmpty ? quote.number : quote.id,
-        'payer': {
-          'name': quote.clientName,
-          'phone': {
-            'number': quote.clientPhone,
-          },
-        },
+        'payer': payer,
         'back_urls': {
           'success': 'https://www.mercadopago.com.ar',
           'failure': 'https://www.mercadopago.com.ar',
