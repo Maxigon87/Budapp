@@ -26,6 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late TextEditingController _emailController;
   late TextEditingController _websiteController;
   late TextEditingController _mpAliasController;
+  late TextEditingController _mpAccessTokenController;
   String? _logoPath;
 
   // Firebase Auth Controllers
@@ -43,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _emailController = TextEditingController(text: company.email);
     _websiteController = TextEditingController(text: company.website);
     _mpAliasController = TextEditingController(text: company.mercadoPagoAlias);
+    _mpAccessTokenController = TextEditingController(text: company.mercadoPagoAccessToken);
     _logoPath = company.logoPath;
   }
 
@@ -54,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _emailController.dispose();
     _websiteController.dispose();
     _mpAliasController.dispose();
+    _mpAccessTokenController.dispose();
     _authEmailController.dispose();
     _authPasswordController.dispose();
     super.dispose();
@@ -139,6 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           email: _emailController.text.trim(),
           website: _websiteController.text.trim(),
           mercadoPagoAlias: _mpAliasController.text.trim(),
+          mercadoPagoAccessToken: _mpAccessTokenController.text.trim(),
           logoPath: _logoPath,
         );
 
@@ -472,6 +476,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         labelText: 'Alias Mercado Pago (Opcional)',
                         hintText: 'Ej. miempresa.mp o cbu/cvu',
                         prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _mpAccessTokenController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Access Token Mercado Pago (Opcional)',
+                        hintText: 'APP_USR-... o TEST-...',
+                        prefixIcon: Icon(Icons.key_outlined),
+                        helperText: 'Permite generar cobros dinámicos con Checkout Oficial y QR en el PDF',
                         border: OutlineInputBorder(),
                       ),
                     ),
