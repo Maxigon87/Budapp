@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import '../providers/quotes_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/company_provider.dart';
@@ -23,6 +24,10 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
   final _clientPhoneController = TextEditingController();
   final _clientAddressController = TextEditingController();
   final _observationsController = TextEditingController();
+  
+  // Discount Controllers
+  final _discountReasonController = TextEditingController();
+  final _discountPercentageController = TextEditingController();
   
   // Custom metadata
   late String _quoteNumber;
@@ -53,14 +58,86 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _clientPhoneController.dispose();
     _clientAddressController.dispose();
     _observationsController.dispose();
+    _discountReasonController.dispose();
+    _discountPercentageController.dispose();
     _serviceNameController.dispose();
     _servicePriceController.dispose();
     _serviceNameFocusNode.dispose();
     super.dispose();
   }
 
-  double get _totalAmount {
+  double get _subtotalAmount {
     return _quoteItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+  }
+
+  double get _discountPercentage {
+    final parsed = double.tryParse(_discountPercentageController.text.replaceAll(',', '.'));
+    if (parsed == null || parsed < 0) return 0.0;
+    if (parsed > 100) return 100.0;
+    return parsed;
+  }
+
+  double get _discountAmount {
+    return _subtotalAmount * (_discountPercentage / 100.0);
+  }
+
+  double get _totalAmount {
+    final total = _subtotalAmount - _discountAmount;
+    return total < 0 ? 0.0 : total;
+  }
+
+  Future<void> _pickContact() async {
+    try {
+      final status = await FlutterContacts.permissions.request(PermissionType.read);
+      if (status == PermissionStatus.granted) {
+        final contact = await FlutterContacts.native.showPicker();
+        if (contact != null) {
+          Contact selected = contact;
+          if (contact.id != null) {
+            final fullContact = await FlutterContacts.get(
+              contact.id!,
+              properties: {ContactProperty.phone, ContactProperty.address},
+            );
+            if (fullContact != null) {
+              selected = fullContact;
+            }
+          }
+          setState(() {
+            final fullName = [selected.name?.first, selected.name?.last]
+                .where((s) => s != null && s.isNotEmpty)
+                .join(' ');
+            _clientNameController.text = (selected.displayName != null && selected.displayName!.isNotEmpty)
+                ? selected.displayName!
+                : fullName;
+            if (selected.phones.isNotEmpty) {
+              _clientPhoneController.text = selected.phones.first.number;
+            }
+            if (selected.addresses.isNotEmpty) {
+              final addr = selected.addresses.first;
+              _clientAddressController.text = addr.formatted ?? addr.street ?? '';
+            }
+          });
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permiso para acceder a los contactos denegado'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar contacto: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _addServiceItem() {
@@ -269,17 +346,21 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
         total: _totalAmount,
         status: 'Pendiente',
         observations: _observationsController.text.trim(),
+        discountReason: _discountReasonController.text.trim(),
+        discountPercentage: _discountPercentage,
       );
 
       await Provider.of<QuotesProvider>(context, listen: false).saveQuote(newQuote);
       return newQuote;
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al guardar presupuesto: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar presupuesto: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       return null;
     } finally {
       setState(() {
@@ -293,6 +374,8 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
     _clientPhoneController.clear();
     _clientAddressController.clear();
     _observationsController.clear();
+    _discountReasonController.clear();
+    _discountPercentageController.clear();
     _serviceNameController.clear();
     _servicePriceController.clear();
     setState(() {
@@ -380,9 +463,22 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
             const SizedBox(height: 16),
 
             // Client Card
-            Text(
-              "Datos del Cliente",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Datos del Cliente",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  onPressed: _pickContact,
+                  icon: const Icon(Icons.contacts_outlined, size: 18),
+                  label: const Text("Cargar Contacto"),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Card(
@@ -392,10 +488,15 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                   children: [
                     TextFormField(
                       controller: _clientNameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nombre del Cliente *',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.person_outline),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.contacts_outlined),
+                          onPressed: _pickContact,
+                          tooltip: 'Seleccionar de contactos',
+                        ),
+                        border: const OutlineInputBorder(),
                       ),
                       textCapitalization: TextCapitalization.words,
                       validator: (value) {
@@ -642,26 +743,108 @@ class _NewQuoteScreenState extends State<NewQuoteScreen> {
                         const Divider(height: 1),
                         Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Column(
                             children: [
-                              const Text(
-                                "TOTAL",
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
-                              Text(
-                                currencyFormat.format(_totalAmount),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: Theme.of(context).colorScheme.primary,
+                              if (_discountPercentage > 0) ...[
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      "Subtotal",
+                                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                                    ),
+                                    Text(
+                                      currencyFormat.format(_subtotalAmount),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
                                 ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _discountReasonController.text.trim().isNotEmpty
+                                            ? "Descuento (${_discountReasonController.text.trim()} - ${_discountPercentage.toStringAsFixed(_discountPercentage.truncateToDouble() == _discountPercentage ? 0 : 1)}%)"
+                                            : "Descuento (${_discountPercentage.toStringAsFixed(_discountPercentage.truncateToDouble() == _discountPercentage ? 0 : 1)}%)",
+                                        style: const TextStyle(fontSize: 14, color: Colors.redAccent),
+                                      ),
+                                    ),
+                                    Text(
+                                      "-${currencyFormat.format(_discountAmount)}",
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.redAccent),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 16),
+                              ],
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "TOTAL",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  Text(
+                                    currencyFormat.format(_totalAmount),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
+            ),
+            const SizedBox(height: 24),
+
+            // Discount Card (Opcional)
+            Text(
+              "Descuento (opcional)",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _discountReasonController,
+                      decoration: const InputDecoration(
+                        labelText: 'Motivo del descuento',
+                        hintText: 'Ej. Cliente frecuente, Pago en efectivo...',
+                        prefixIcon: Icon(Icons.discount_outlined),
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _discountPercentageController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Porcentaje de descuento (%)',
+                        hintText: 'Ej. 10',
+                        prefixIcon: Icon(Icons.percent),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        setState(() {});
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 

@@ -44,6 +44,8 @@ class Quote {
   final double total;
   final String status; // 'Pendiente', 'Aceptado', 'Rechazado'
   final String observations;
+  final String discountReason;
+  final double discountPercentage;
 
   Quote({
     required this.id,
@@ -56,6 +58,8 @@ class Quote {
     required this.total,
     required this.status,
     required this.observations,
+    this.discountReason = '',
+    this.discountPercentage = 0.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -70,6 +74,8 @@ class Quote {
       'total': total,
       'status': status,
       'observations': observations,
+      'discountReason': discountReason,
+      'discountPercentage': discountPercentage,
     };
   }
 
@@ -90,6 +96,10 @@ class Quote {
       total: (map['total'] is int) ? (map['total'] as int).toDouble() : (map['total'] ?? 0.0) as double,
       status: (map['status'] ?? 'Pendiente') as String,
       observations: (map['observations'] ?? '') as String,
+      discountReason: (map['discountReason'] ?? '') as String,
+      discountPercentage: (map['discountPercentage'] is int)
+          ? (map['discountPercentage'] as int).toDouble()
+          : ((map['discountPercentage'] ?? 0.0) as double),
     );
   }
 }

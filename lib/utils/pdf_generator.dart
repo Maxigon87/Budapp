@@ -303,7 +303,7 @@ class PdfGenerator {
 
               pw.SizedBox(height: 15),
 
-              // Total Row
+              // Total & Discount Breakdown
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Container(
@@ -312,30 +312,147 @@ class PdfGenerator {
                     color: PdfColors.teal50,
                     borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
                   ),
-                  child: pw.Row(
-                    mainAxisSize: pw.MainAxisSize.min,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text(
-                        "TOTAL: ",
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.teal900,
+                      if (quote.discountPercentage > 0) ...[
+                        pw.Row(
+                          mainAxisSize: pw.MainAxisSize.min,
+                          children: [
+                            pw.Text(
+                              "Subtotal: ",
+                              style: const pw.TextStyle(
+                                fontSize: 10,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                            pw.SizedBox(width: 8),
+                            pw.Text(
+                              currencyFormat.format(
+                                quote.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
+                              ),
+                              style: pw.TextStyle(
+                                fontSize: 10,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.grey800,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      pw.SizedBox(width: 8),
-                      pw.Text(
-                        currencyFormat.format(quote.total),
-                        style: pw.TextStyle(
-                          fontSize: 14,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.teal900,
+                        pw.SizedBox(height: 4),
+                        pw.Row(
+                          mainAxisSize: pw.MainAxisSize.min,
+                          children: [
+                            pw.Text(
+                              quote.discountReason.isNotEmpty
+                                  ? "Descuento (${quote.discountReason} - ${quote.discountPercentage.toStringAsFixed(quote.discountPercentage.truncateToDouble() == quote.discountPercentage ? 0 : 1)}%): "
+                                  : "Descuento (${quote.discountPercentage.toStringAsFixed(quote.discountPercentage.truncateToDouble() == quote.discountPercentage ? 0 : 1)}%): ",
+                              style: const pw.TextStyle(
+                                fontSize: 10,
+                                color: PdfColors.red700,
+                              ),
+                            ),
+                            pw.SizedBox(width: 8),
+                            pw.Text(
+                              "-${currencyFormat.format(quote.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity)) * (quote.discountPercentage / 100.0))}",
+                              style: pw.TextStyle(
+                                fontSize: 10,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.red700,
+                              ),
+                            ),
+                          ],
                         ),
+                        pw.SizedBox(height: 4),
+                        pw.Container(
+                          width: 150,
+                          child: pw.Divider(color: PdfColors.teal200, thickness: 0.5),
+                        ),
+                        pw.SizedBox(height: 4),
+                      ],
+                      pw.Row(
+                        mainAxisSize: pw.MainAxisSize.min,
+                        children: [
+                          pw.Text(
+                            "TOTAL: ",
+                            style: pw.TextStyle(
+                              fontSize: 12,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.teal900,
+                            ),
+                          ),
+                          pw.SizedBox(width: 8),
+                          pw.Text(
+                            currencyFormat.format(quote.total),
+                            style: pw.TextStyle(
+                              fontSize: 14,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.teal900,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
+
+              // Mercado Pago Payment Link Card
+              if (company.mercadoPagoAlias.isNotEmpty) ...[
+                pw.SizedBox(height: 12),
+                pw.UrlLink(
+                  destination: "https://link.mercadopago.com.ar/${company.mercadoPagoAlias.replaceAll(' ', '')}",
+                  child: pw.Container(
+                    width: double.infinity,
+                    padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColor.fromHex("#009EE3"),
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                    ),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              "PAGAR / TRANSFERIR CON MERCADO PAGO",
+                              style: pw.TextStyle(
+                                fontSize: 10,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                            pw.SizedBox(height: 2),
+                            pw.Text(
+                              "Alias MP: ${company.mercadoPagoAlias}",
+                              style: const pw.TextStyle(
+                                fontSize: 9,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+                          decoration: const pw.BoxDecoration(
+                            color: PdfColors.white,
+                            borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                          ),
+                          child: pw.Text(
+                            "Tocar para Pagar >",
+                            style: pw.TextStyle(
+                              fontSize: 9,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColor.fromHex("#009EE3"),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
 
               pw.Spacer(),
 

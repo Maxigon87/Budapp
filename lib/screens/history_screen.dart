@@ -198,6 +198,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      if (quote.discountPercentage > 0) ...[
+                        Builder(
+                          builder: (context) {
+                            final subtotal = quote.items.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+                            final discountAmount = subtotal * (quote.discountPercentage / 100.0);
+                            final pctStr = quote.discountPercentage.toStringAsFixed(
+                              quote.discountPercentage.truncateToDouble() == quote.discountPercentage ? 0 : 1,
+                            );
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "Subtotal: ${currencyFormat.format(subtotal)}",
+                                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  quote.discountReason.isNotEmpty
+                                      ? "Descuento (${quote.discountReason} - $pctStr%): -${currencyFormat.format(discountAmount)}"
+                                      : "Descuento ($pctStr%): -${currencyFormat.format(discountAmount)}",
+                                  style: const TextStyle(fontSize: 14, color: Colors.redAccent, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 6),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(

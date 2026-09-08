@@ -21,6 +21,7 @@ class CompanyProvider extends ChangeNotifier {
   String get phone => _box.get('phone', defaultValue: '') as String;
   String get email => _box.get('email', defaultValue: '') as String;
   String get website => _box.get('website', defaultValue: '') as String;
+  String get mercadoPagoAlias => _box.get('mercadoPagoAlias', defaultValue: '') as String;
 
   String? _resolvedLogoPath;
   String? get logoPath => _resolvedLogoPath;
@@ -105,6 +106,7 @@ class CompanyProvider extends ChangeNotifier {
     required String phone,
     required String email,
     required String website,
+    String? mercadoPagoAlias,
     String? logoPath,
   }) async {
     await _box.put('name', name);
@@ -112,6 +114,9 @@ class CompanyProvider extends ChangeNotifier {
     await _box.put('phone', phone);
     await _box.put('email', email);
     await _box.put('website', website);
+    if (mercadoPagoAlias != null) {
+      await _box.put('mercadoPagoAlias', mercadoPagoAlias);
+    }
 
     if (logoPath != null && logoPath.isNotEmpty) {
       try {
@@ -194,6 +199,7 @@ class CompanyProvider extends ChangeNotifier {
               'phone': phone,
               'email': email,
               'website': website,
+              'mercadoPagoAlias': mercadoPagoAlias,
               'logoBase64': logoBase64,
             });
       } catch (e) {
@@ -227,6 +233,7 @@ class CompanyProvider extends ChangeNotifier {
           await _box.put('phone', data['phone'] ?? '');
           await _box.put('email', data['email'] ?? '');
           await _box.put('website', data['website'] ?? '');
+          await _box.put('mercadoPagoAlias', data['mercadoPagoAlias'] ?? '');
           
           final logoBase64 = data['logoBase64'] as String?;
           if (logoBase64 != null && logoBase64.isNotEmpty) {
@@ -285,6 +292,7 @@ class CompanyProvider extends ChangeNotifier {
               'phone': phone,
               'email': email,
               'website': website,
+              'mercadoPagoAlias': mercadoPagoAlias,
               'logoBase64': logoBase64,
             });
       } catch (e) {
