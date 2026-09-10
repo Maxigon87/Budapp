@@ -5,7 +5,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../providers/company_provider.dart';
 import '../providers/quotes_provider.dart';
-import '../services/mercado_pago_service.dart';
 import 'package:intl/intl.dart';
 
 class PdfGenerator {
@@ -14,19 +13,6 @@ class PdfGenerator {
     required Quote quote,
   }) async {
     final pdf = pw.Document();
-
-    // Resolve Mercado Pago Payment Link (Checkout preference API or fallback to Alias link)
-    String? paymentUrl;
-    if (company.mercadoPagoAccessToken.isNotEmpty) {
-      paymentUrl = await MercadoPagoService.createPaymentPreference(
-        accessToken: company.mercadoPagoAccessToken,
-        quote: quote,
-      );
-    }
-    if (paymentUrl == null && company.mercadoPagoAlias.isNotEmpty) {
-      final cleanAlias = company.mercadoPagoAlias.trim().replaceAll(' ', '');
-      paymentUrl = 'https://link.mercadopago.com.ar/$cleanAlias';
-    }
     
     // Load Logo if available
     pw.ImageProvider? logoImage;
@@ -412,82 +398,7 @@ class PdfGenerator {
                 ),
               ),
 
-              // Mercado Pago Payment & QR Card
-              if (paymentUrl != null) ...[
-                pw.SizedBox(height: 12),
-                pw.UrlLink(
-                  destination: paymentUrl,
-                  child: pw.Container(
-                    width: double.infinity,
-                    padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColor.fromHex("#009EE3"),
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                    ),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        pw.Expanded(
-                          child: pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text(
-                                "PAGAR CON MERCADO PAGO",
-                                style: pw.TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: pw.FontWeight.bold,
-                                  color: PdfColors.white,
-                                ),
-                              ),
-                              pw.SizedBox(height: 2),
-                              if (company.mercadoPagoAlias.isNotEmpty)
-                                pw.Text(
-                                  "Alias MP: ${company.mercadoPagoAlias}",
-                                  style: const pw.TextStyle(
-                                    fontSize: 9,
-                                    color: PdfColors.white,
-                                  ),
-                                ),
-                              pw.SizedBox(height: 4),
-                              pw.Container(
-                                padding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 8),
-                                decoration: const pw.BoxDecoration(
-                                  color: PdfColors.white,
-                                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
-                                ),
-                                child: pw.Text(
-                                  "Tocar aquí para Pagar Online >",
-                                  style: pw.TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: pw.FontWeight.bold,
-                                    color: PdfColor.fromHex("#009EE3"),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        pw.SizedBox(width: 12),
-                        // Native QR Code Generator inside PDF
-                        pw.Container(
-                          padding: const pw.EdgeInsets.all(4),
-                          decoration: const pw.BoxDecoration(
-                            color: PdfColors.white,
-                            borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
-                          ),
-                          child: pw.BarcodeWidget(
-                            barcode: pw.Barcode.qrCode(),
-                            data: paymentUrl,
-                            width: 46,
-                            height: 46,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+
 
               pw.Spacer(),
 
