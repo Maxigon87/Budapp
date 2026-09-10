@@ -187,7 +187,6 @@ class ServicesExcelImporter {
     final lastComma = cleaned.lastIndexOf(',');
     final lastDot = cleaned.lastIndexOf('.');
     final decimalSeparatorIndex = lastComma > lastDot ? lastComma : lastDot;
-    final decimalSeparator = decimalSeparatorIndex >= 0 ? cleaned[decimalSeparatorIndex] : '';
     final fractionalDigits = decimalSeparatorIndex >= 0 ? cleaned.length - decimalSeparatorIndex - 1 : 0;
 
     if (decimalSeparatorIndex >= 0 && fractionalDigits > 0 && fractionalDigits <= 2) {

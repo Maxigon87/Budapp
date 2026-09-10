@@ -9,7 +9,6 @@ import '../providers/auth_provider.dart';
 import '../providers/company_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/quotes_provider.dart';
-import '../providers/theme_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -104,39 +103,49 @@ class MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final accentColor = themeProvider.lightAccent;
+    const primaryColor = Color(0xFF3B82F6);
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F131C),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
         child: _screens[_selectedIndex],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Inicio',
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xDA0F131C),
+          border: Border(
+            top: BorderSide(color: Color(0xFF1C1F29), width: 1),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Historial',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.handyman_outlined),
-            selectedIcon: Icon(Icons.handyman),
-            label: 'Servicios',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Configuración',
-          ),
-        ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onItemTapped,
+          backgroundColor: Colors.transparent,
+          indicatorColor: primaryColor.withOpacity(0.2),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard, color: primaryColor),
+              label: 'Inicio',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long, color: primaryColor),
+              label: 'Historial',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.build_outlined),
+              selectedIcon: Icon(Icons.build, color: primaryColor),
+              label: 'Servicios',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.tune_outlined),
+              selectedIcon: Icon(Icons.tune, color: primaryColor),
+              label: 'Ajustes',
+            ),
+          ],
+        ),
       ),
       floatingActionButton: _selectedIndex == 0 || _selectedIndex == 1
           ? FloatingActionButton.extended(
@@ -149,11 +158,11 @@ class MainScreenState extends State<MainScreen> {
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
                 'Nuevo Presupuesto',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 14),
               ),
-              backgroundColor: accentColor,
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              backgroundColor: primaryColor,
+              elevation: 4,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             )
           : null,
     );

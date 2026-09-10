@@ -9,7 +9,6 @@ import 'new_quote_screen.dart';
 import 'main_screen.dart';
 import '../utils/pdf_generator.dart';
 import 'package:printing/printing.dart';
-import '../providers/theme_provider.dart';
 
 // 1. Premium Glowing Custom Painter for the Income Card Background
 class IncomeChartPainter extends CustomPainter {
@@ -84,43 +83,11 @@ class HomeScreen extends StatelessWidget {
     return 'Hace unos instantes';
   }
 
-  // Premium UI elevation wrapper helper
-  Widget _buildPremiumCard(
-    BuildContext context, {
-    required Widget child,
-    EdgeInsetsGeometry? margin,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      margin: margin ?? const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.18 : 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: child,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final company = Provider.of<CompanyProvider>(context);
     final quotesProvider = Provider.of<QuotesProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final accentColor = themeProvider.lightAccent;
 
     final allQuotes = quotesProvider.quotes;
     final recentQuotes = allQuotes.take(5).toList();
@@ -136,97 +103,113 @@ class HomeScreen extends StatelessWidget {
     }
 
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final pageBackground = theme.scaffoldBackgroundColor;
-    final primaryText = colorScheme.onSurface;
-    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
-    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
+    const pageBackground = Color(0xFF0F131C);
+    const surfaceColor = Color(0xFF1C1F29);
+    const surfaceHighColor = Color(0xFF262A34);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF4EDEA3);
+    const tertiaryColor = Color(0xFFFFB95F);
+    const textPrimary = Color(0xFFDFE2EF);
+    const textSecondary = Color(0xFFC2C6D6);
 
     return Scaffold(
       backgroundColor: pageBackground,
       body: CustomScrollView(
         slivers: [
-          // Elegant corporate app bar with minimal cloud sync status
+          // Stitch Header: App title + EMGI badge + Cloud sync indicator
           SliverAppBar(
             floating: true,
             pinned: true,
             elevation: 0,
-            backgroundColor: pageBackground,
+            backgroundColor: const Color(0xEC0A0E17),
             surfaceTintColor: Colors.transparent,
             title: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.asset(
-                    'assets/images/budapp-logo.png',
-                    width: 28,
-                    height: 28,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.receipt_long_outlined,
-                      color: Color(0xFF1E3A8A),
-                      size: 20,
-                    ),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF002E6A),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.precision_manufacturing_outlined,
+                    color: Color(0xFFADC6FF),
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  "Budapp",
-                  style: TextStyle(
-                    color: primaryText,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                    letterSpacing: 0.5,
-                  ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          "Budapp",
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: surfaceHighColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            "EMGI",
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: authProvider.isAuthenticated ? secondaryColor : tertiaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          authProvider.isAuthenticated
+                              ? "Nube activa • Sincronizado"
+                              : "Modo Local • Sin sesión",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
             actions: [
-              // Cloud Sync Status Indicator
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Tooltip(
-                  message: authProvider.isAuthenticated
-                      ? "Conectado como ${authProvider.user?.email}"
-                      : "Modo Local (Configura Firebase en Ajustes)",
-                  child: TextButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            authProvider.isAuthenticated
-                                ? "Sincronización activa con ${authProvider.user?.email}"
-                                : "Trabajando en almacenamiento local. Configura la nube en Ajustes.",
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    icon: Icon(
-                      authProvider.isAuthenticated ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
-                      size: 16,
-                      color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
-                    ),
-                    label: Text(
-                      authProvider.isAuthenticated ? "Nube" : "Local",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: authProvider.isAuthenticated ? const Color(0xFF16A34A) : const Color(0xFFF59E0B),
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      backgroundColor: authProvider.isAuthenticated
-                          ? const Color(0xFF16A34A).withOpacity(0.08)
-                          : const Color(0xFFF59E0B).withOpacity(0.08),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                  ),
-                ),
+              IconButton(
+                onPressed: () {
+                  final mainState = context.findAncestorStateOfType<MainScreenState>();
+                  if (mainState != null) {
+                    mainState.setSelectedIndex(3);
+                  }
+                },
+                icon: const Icon(Icons.person_outline, color: textSecondary, size: 22),
+                tooltip: 'Perfil',
               ),
             ],
           ),
@@ -238,45 +221,125 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Business/Company Brand Header
+                  // 1. Workshop Profile Snapshot Header
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (company.logoPath != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            File(company.logoPath!),
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildDefaultCompanyLogo(context),
+                      Row(
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: surfaceHighColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: company.logoPath != null
+                                      ? Image.file(
+                                          File(company.logoPath!),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, e, s) => const Icon(
+                                            Icons.memory_outlined,
+                                            color: primaryColor,
+                                            size: 24,
+                                          ),
+                                        )
+                                      : const Icon(
+                                          Icons.memory_outlined,
+                                          color: primaryColor,
+                                          size: 24,
+                                        ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: secondaryColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: pageBackground, width: 1.5),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                      else
-                        _buildDefaultCompanyLogo(context),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    company.name.isNotEmpty ? company.name : "EMGI TEC",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: surfaceColor,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      "PRO",
+                                      style: TextStyle(
+                                        color: textSecondary,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                company.isConfigured
+                                    ? "${company.email} • ${company.phone}"
+                                    : "Sin configurar • Toca Ajustes",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0x3300A572),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              company.name.isNotEmpty ? company.name : "Nombre de tu Empresa",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                                color: primaryText,
-                                letterSpacing: 0.5,
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: secondaryColor,
+                                shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              company.isConfigured 
-                                  ? "${company.email} | ${company.phone}" 
-                                  : "Configura los datos de tu empresa en la pestaña Ajustes",
+                            const SizedBox(width: 4),
+                            const Text(
+                              "ONLINE",
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: secondaryText,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: secondaryColor,
                               ),
                             ),
                           ],
@@ -284,122 +347,38 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Divider(color: colorScheme.outlineVariant, height: 1),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Missing Company Profile Banner
                   if (!company.isConfigured)
-                    Card(
-                      color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5), width: 1),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0x3393000A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF93000A), width: 1),
                       ),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 24),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Faltan Datos de la Empresa",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? const Color(0xFFFECACA) : const Color(0xFF991B1B),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    "Configura tu logo de negocio y contacto en Ajustes para incluirlos en los presupuestos generados.",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF7F1D1D),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // 2. Linear Gradient Premium Totals Card with Custom Chart Painter
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: isDark ? Colors.white.withOpacity(0.24) : Colors.transparent,
-                        width: isDark ? 1.2 : 0,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF1E3A8A), // Deep Corporate Blue
-                            Color(0xFF0F172A), // Dark Midnight Blue
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: Stack(
+                      child: Row(
                         children: [
-                          // Graphic growth visualization background
-                          Positioned.fill(
-                            child: CustomPaint(
-                              painter: IncomeChartPainter(),
-                            ),
-                          ),
-                          // Content layout
-                          Padding(
-                            padding: const EdgeInsets.all(22.0),
+                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFB4AB), size: 22),
+                          const SizedBox(width: 10),
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      "💰 Ingresos Totales",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    Icon(Icons.trending_up, color: Colors.white.withOpacity(0.9), size: 20),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
                                 Text(
-                                  currencyFormat.format(totalEarnings),
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "${acceptedQuotes.length} presupuestos aprobados",
+                                  "Faltan Datos de la Empresa",
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.85),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFFB4AB),
+                                    fontSize: 13,
                                   ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "Configura tus datos de contacto en Ajustes para incluirlos en presupuestos.",
+                                  style: TextStyle(fontSize: 11, color: Color(0xFFFFDAD6)),
                                 ),
                               ],
                             ),
@@ -407,57 +386,270 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                  // 2. Hero Income Card (Stitch Minimalist OLED Card)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: surfaceHighColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF31353F), width: 1),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Stack(
+                      children: [
+                        // Ambient top-left illumination glow
+                        Positioned(
+                          top: -30,
+                          left: -30,
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: primaryColor.withOpacity(0.12),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: IncomeChartPainter(),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(18.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.monetization_on_outlined, color: tertiaryColor, size: 18),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "INGRESOS TOTALES",
+                                        style: TextStyle(
+                                          color: textSecondary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x3300A572),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.trending_up, color: secondaryColor, size: 13),
+                                        SizedBox(width: 3),
+                                        Text(
+                                          "+100%",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: secondaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    currencyFormat.format(totalEarnings),
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    "ARS",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Icon(Icons.verified, color: secondaryColor, size: 14),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    "${acceptedQuotes.length} presupuestos aprobados",
+                                    style: const TextStyle(
+                                      color: textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
 
-                  // 3. Grid Statistics using Premium custom soft shadows
+                  // 3. Counter Grid (2 Columns: Emitidos, Pendientes)
                   Row(
                     children: [
                       Expanded(
-                        child: _buildStatCard(
-                          context,
-                          title: "Emitidos",
-                          value: totalQuotesCount.toString(),
-                          subtitle: "Presupuestos totales",
-                          icon: Icons.description_outlined,
-                          iconColor: accentColor,
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF262A34), width: 1),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Emitidos",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: surfaceHighColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(Icons.description_outlined, color: primaryColor, size: 16),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                totalQuotesCount.toString(),
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                "Presupuestos totales",
+                                style: TextStyle(fontSize: 11, color: textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: _buildStatCard(
-                          context,
-                          title: "Pendientes",
-                          value: pendingQuotes.length.toString(),
-                          subtitle: "Esperando aprobación",
-                          icon: Icons.hourglass_empty,
-                          iconColor: const Color(0xFFF59E0B), // Orange
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF262A34), width: 1),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    "Pendientes",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: surfaceHighColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(Icons.hourglass_empty, color: tertiaryColor, size: 16),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                pendingQuotes.length.toString(),
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                "Esperando aprobación",
+                                style: TextStyle(fontSize: 11, color: textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // 4. Quick Actions with thin borders and soft opacity backgrounds
-                  Text(
-                    "⚡ Acciones Rápidas",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: primaryText,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                    ),
+                  // 4. Quick Actions Panel (4 Columns)
+                  Row(
+                    children: [
+                      const Icon(Icons.bolt, color: tertiaryColor, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        "ACCIONES RÁPIDAS",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: textSecondary,
+                          fontSize: 11,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       Expanded(
-                        child: _buildQuickActionButton(
+                        child: _buildStitchQuickTile(
                           context,
                           label: "Nuevo",
                           icon: Icons.add_circle_outline,
-                          iconColor: accentColor,
+                          iconBgColor: primaryColor.withOpacity(0.18),
+                          iconColor: primaryColor,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -468,11 +660,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildQuickActionButton(
+                        child: _buildStitchQuickTile(
                           context,
                           label: "Historial",
                           icon: Icons.history,
-                          iconColor: const Color(0xFFF59E0B),
+                          iconBgColor: tertiaryColor.withOpacity(0.18),
+                          iconColor: tertiaryColor,
                           onTap: () {
                             final mainState = context.findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
@@ -483,11 +676,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildQuickActionButton(
+                        child: _buildStitchQuickTile(
                           context,
                           label: "Servicios",
-                          icon: Icons.handyman_outlined,
-                          iconColor: const Color(0xFF16A34A),
+                          icon: Icons.home_repair_service_outlined,
+                          iconBgColor: secondaryColor.withOpacity(0.18),
+                          iconColor: secondaryColor,
                           onTap: () {
                             final mainState = context.findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
@@ -498,11 +692,12 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _buildQuickActionButton(
+                        child: _buildStitchQuickTile(
                           context,
                           label: "Ajustes",
                           icon: Icons.settings_outlined,
-                          iconColor: const Color(0xFF6B7280),
+                          iconBgColor: surfaceHighColor,
+                          iconColor: textSecondary,
                           onTap: () {
                             final mainState = context.findAncestorStateOfType<MainScreenState>();
                             if (mainState != null) {
@@ -513,40 +708,64 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 28),
-                  
-                  // 5. Recent Quotes Header Section with Inline Button aligned to the right
+                  const SizedBox(height: 24),
+
+                  // 5. Recent Quotes Header Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Presupuestos Recientes",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: primaryText,
-                          fontSize: 14,
-                          letterSpacing: 0.5,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            "Presupuestos Recientes",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: surfaceHighColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              recentQuotes.length.toString(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      // Elegant Right-aligned New Quote Button
-                      FilledButton.icon(
-                        onPressed: () {
+                      InkWell(
+                        onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
                           );
                         },
-                        icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                        label: const Text(
-                          "Nuevo",
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          backgroundColor: accentColor,
-                          elevation: 0,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF002E6A),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.add, size: 14, color: Color(0xFFADC6FF)),
+                              SizedBox(width: 4),
+                              Text(
+                                "Nuevo",
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFADC6FF)),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -557,52 +776,55 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // 5. Visual Empty State or list with real data formatting
+          // Recent Quotes List
           if (recentQuotes.isEmpty)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                child: _buildPremiumCard(
-                  context,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 48,
-                          color: accentColor,
+                child: Container(
+                  padding: const EdgeInsets.all(24.0),
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF262A34), width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 40,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Sin presupuestos todavía",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: textPrimary,
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          "Sin presupuestos todavía",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: primaryText,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Crea tu primer presupuesto para comenzar.",
+                        style: TextStyle(
+                          color: textSecondary,
+                          fontSize: 12,
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "Crea tu primer presupuesto para comenzar.",
-                          style: TextStyle(
-                            color: secondaryText,
-                            fontSize: 13,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
-                            );
-                          },
-                          child: const Text("Crear Presupuesto"),
-                        ),
-                      ],
-                    ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NewQuoteScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text("Crear Presupuesto"),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -616,23 +838,26 @@ class HomeScreen extends StatelessWidget {
                   Color statusColor;
                   switch (quote.status) {
                     case 'Aceptado':
-                      statusColor = const Color(0xFF16A34A); // Success Green
+                      statusColor = secondaryColor;
                       break;
                     case 'Rechazado':
-                      statusColor = const Color(0xFF6B7280); // Gray for cancelled/rejected
+                      statusColor = const Color(0xFF8C909F);
                       break;
                     default:
-                      statusColor = const Color(0xFFF59E0B); // Warning Orange
+                      statusColor = tertiaryColor;
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                    child: _buildPremiumCard(
-                      context,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF262A34), width: 1),
+                      ),
                       child: ListTile(
                         onTap: () => _showQuoteDetails(context, quote),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        // Indicator dot of color
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         leading: Container(
                           width: 8,
                           height: 8,
@@ -646,9 +871,9 @@ class HomeScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 quote.clientName,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: primaryText,
+                                  color: textPrimary,
                                   fontSize: 14,
                                 ),
                                 maxLines: 1,
@@ -658,10 +883,10 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               currencyFormat.format(quote.total),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: primaryText,
+                                color: textPrimary,
                               ),
                             ),
                           ],
@@ -671,18 +896,38 @@ class HomeScreen extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "Presupuesto #${quote.number} (${quote.status})",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: secondaryText,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    "Presupuesto #${quote.number}",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      quote.status,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               Text(
                                 _getTimeElapsed(quote.date),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 11,
-                                  color: mutedText,
+                                  color: textSecondary,
                                 ),
                               ),
                             ],
@@ -696,7 +941,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           
-          // Extra bottom padding for floating action button
           const SliverToBoxAdapter(
             child: SizedBox(height: 80),
           )
@@ -705,158 +949,55 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultLogo() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E3A8A),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Icon(
-        Icons.receipt_long_outlined,
-        color: Colors.white,
-        size: 26,
-      ),
-    );
-  }
-
-  Widget _buildDefaultCompanyLogo(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
-      ),
-      child: Icon(
-        Icons.business_outlined,
-        color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
-        size: 28,
-      ),
-    );
-  }
-
-  Widget _buildQuickActionButton(
+  Widget _buildStitchQuickTile(
     BuildContext context, {
     required String label,
     required IconData icon,
+    required Color iconBgColor,
     required Color iconColor,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(isDark ? 0.95 : 0.85),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.16 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1F29),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF262A34), width: 1),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFDFE2EF),
                 ),
-              ],
-            ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final secondaryText = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF6B7280);
-    final mutedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF9CA3AF);
-
-    return _buildPremiumCard(
-      context,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: secondaryText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Icon(icon, color: iconColor, size: 18),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 11,
-                color: mutedText,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showQuoteDetails(BuildContext context, Quote quote) {
     final company = Provider.of<CompanyProvider>(context, listen: false);

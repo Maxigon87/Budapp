@@ -318,339 +318,528 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final companyProvider = Provider.of<CompanyProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
+
+    const surfaceColor = Color(0xFF1C1F29);
+    const surfaceHighColor = Color(0xFF262A34);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF4EDEA3);
+    const tertiaryColor = Color(0xFFFFB95F);
+    const textPrimary = Color(0xFFDFE2EF);
+    const textSecondary = Color(0xFF9EA3B5);
 
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Section 1: Company Profile Form
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Perfil de la Empresa / Técnico',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Logo Picker Section
-                    Center(
-                      child: Stack(
+          // Section 1: Business Profile
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF262A34), width: 1),
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
                         children: [
-                          CircleAvatar(
-                            radius: 48,
-                            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                            backgroundImage: _logoPath != null ? FileImage(File(_logoPath!)) : null,
-                            child: _logoPath == null
-                                ? Icon(
-                                    Icons.business,
-                                    size: 40,
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                  )
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              backgroundColor: const Color(0xFF2563EB),
-                              radius: 16,
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
-                                onPressed: _pickLogo,
-                              ),
+                          Icon(Icons.storefront_outlined, color: primaryColor, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Perfil de la Empresa / Técnico',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                              fontSize: 15,
                             ),
                           ),
-                          if (_logoPath != null)
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: surfaceHighColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'EMGI ID #01',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Logo Picker
+                  Center(
+                    child: Column(
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: surfaceHighColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFF31353F), width: 1),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: _logoPath != null && _logoPath!.isNotEmpty
+                                    ? Image.file(
+                                        File(_logoPath!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Icon(Icons.business, size: 36, color: primaryColor),
+                                      )
+                                    : const Icon(Icons.business_outlined, size: 36, color: primaryColor),
+                              ),
+                            ),
                             Positioned(
-                              top: 0,
-                              right: 0,
-                              child: CircleAvatar(
-                                backgroundColor: const Color(0xFFDC2626),
-                                radius: 14,
-                                child: IconButton(
-                                  icon: const Icon(Icons.close, size: 12, color: Colors.white),
-                                  onPressed: () {
-                                    setState(() {
-                                      _logoPath = null;
-                                    });
-                                    companyProvider.clearLogo();
-                                  },
+                              bottom: -6,
+                              right: -6,
+                              child: GestureDetector(
+                                onTap: _pickLogo,
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: const BoxDecoration(
+                                    color: primaryColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(color: Colors.black38, blurRadius: 4),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.photo_camera, size: 14, color: Colors.white),
                                 ),
                               ),
                             ),
-                        ],
-                      ),
+                            if (_logoPath != null && _logoPath!.isNotEmpty)
+                              Positioned(
+                                top: -6,
+                                right: -6,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _logoPath = null;
+                                    });
+                                    Provider.of<CompanyProvider>(context, listen: false).clearLogo();
+                                  },
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF93000A),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close, size: 13, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "LOGOTIPO CORPORATIVO",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: textSecondary,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
+                  ),
+                  const SizedBox(height: 20),
 
-                    // Form Fields
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre Comercial *',
-                        prefixIcon: Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa el nombre comercial' : null,
+                  // Form Fields
+                  const Text(
+                    "NOMBRE COMERCIAL *",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _nameController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'EMGI TEC',
+                      prefixIcon: Icon(Icons.badge_outlined, color: textSecondary, size: 18),
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Dirección Comercial *',
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa la dirección' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Teléfono de Contacto *',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Ingresa el teléfono' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo Electrónico *',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Ingresa el correo electrónico';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Ingresa un correo electrónico válido';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _websiteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Sitio Web (Opcional)',
-                        prefixIcon: Icon(Icons.language_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
-                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) =>
+                        value == null || value.trim().isEmpty ? 'Ingresa el nombre comercial' : null,
+                  ),
+                  const SizedBox(height: 12),
 
-                    const SizedBox(height: 16),
+                  const Text(
+                    "DIRECCIÓN COMERCIAL *",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _addressController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'San Luis Argentina',
+                      prefixIcon: Icon(Icons.location_on_outlined, color: textSecondary, size: 18),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (value) =>
+                        value == null || value.trim().isEmpty ? 'Ingresa la dirección' : null,
+                  ),
+                  const SizedBox(height: 12),
 
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _saveCompanyInfo,
-                        icon: const Icon(Icons.save_outlined),
-                        label: const Text('Guardar Datos Perfil'),
+                  const Text(
+                    "TELÉFONO DE CONTACTO *",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _phoneController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: '2665112707',
+                      prefixIcon: Icon(Icons.phone_outlined, color: textSecondary, size: 18),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) =>
+                        value == null || value.trim().isEmpty ? 'Ingresa el teléfono' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  const Text(
+                    "CORREO ELECTRÓNICO *",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _emailController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'maxigon087@gmail.com',
+                      prefixIcon: Icon(Icons.email_outlined, color: textSecondary, size: 18),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Ingresa el correo electrónico';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return 'Ingresa un correo electrónico válido';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  const Text(
+                    "SITIO WEB (OPCIONAL)",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textSecondary, letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: _websiteController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'https://emgitec.com',
+                      prefixIcon: Icon(Icons.language_outlined, color: textSecondary, size: 18),
+                    ),
+                    keyboardType: TextInputType.url,
+                  ),
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _saveCompanyInfo,
+                      icon: const Icon(Icons.save_outlined, size: 18),
+                      label: const Text('Guardar Datos Perfil'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Section 2: Firebase Cloud Sync
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF262A34), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.cloud_sync_outlined, color: secondaryColor, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sincronización en la Nube',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                        fontSize: 15,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+                const SizedBox(height: 6),
+                const Text(
+                  'Respalda tus presupuestos y base de servicios de forma segura para recuperarlos en cualquier dispositivo.',
+                  style: TextStyle(fontSize: 12, color: textSecondary),
+                ),
+                const SizedBox(height: 14),
 
-          // Section 2: Firebase Cloud Sync (Version 4)
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sincronización en la Nube (Firebase)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Respalda tus presupuestos y base de servicios de forma segura para recuperarlos en cualquier dispositivo.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                  const Divider(height: 24),
-
-                  if (authProvider.isAuthenticated) ...[
-                    // Logged in state
-                    Row(
+                if (authProvider.isAuthenticated) ...[
+                  // Logged in state card
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF181B25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
                       children: [
-                        const Icon(Icons.cloud_done_outlined, color: Color(0xFF16A34A)),
-                        const SizedBox(width: 12),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0x3300A572),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.cloud_done_outlined, color: secondaryColor, size: 18),
+                        ),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                "Sesión Iniciada",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: secondaryColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    "Sesión Iniciada",
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontSize: 12),
+                                  ),
+                                ],
                               ),
                               Text(
                                 authProvider.user?.email ?? '',
-                                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
+                                style: const TextStyle(fontSize: 11, color: textSecondary),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
                         ),
                         TextButton(
                           onPressed: () => authProvider.signOut(),
-                          child: const Text('Salir', style: TextStyle(color: Color(0xFFDC2626))),
+                          child: const Text('Salir', style: TextStyle(color: Color(0xFFFFB4AB), fontSize: 12)),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                  ),
+                  const SizedBox(height: 14),
 
-                    // Backup and Restore Actions
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _syncData(false), // Restore / Download
-                            icon: const Icon(Icons.cloud_download_outlined),
-                            label: const Text("Restaurar"),
+                  // Backup and Restore Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _syncData(false),
+                          icon: const Icon(Icons.cloud_download_outlined, color: primaryColor, size: 18),
+                          label: const Text("Restaurar", style: TextStyle(color: textPrimary, fontSize: 13)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF262A34)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: () => _syncData(true), // Backup / Upload
-                            icon: const Icon(Icons.cloud_upload_outlined),
-                            label: const Text("Respaldar"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    // Logged out / offline state
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _isSignUpMode ? 'Crear Cuenta' : 'Iniciar Sesión',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _isSignUpMode = !_isSignUpMode;
-                            });
-                          },
-                          child: Text(_isSignUpMode ? '¿Ya tienes cuenta? Ingresa' : '¿No tienes cuenta? Regístrate'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    TextFormField(
-                      controller: _authEmailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo Electrónico',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
                       ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _authPasswordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Contraseña (mín. 6 caracteres)',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (authProvider.isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      SizedBox(
-                        width: double.infinity,
+                      const SizedBox(width: 10),
+                      Expanded(
                         child: FilledButton.icon(
-                          onPressed: _handleAuthAction,
-                          icon: Icon(_isSignUpMode ? Icons.person_add_outlined : Icons.login_outlined),
-                          label: Text(_isSignUpMode ? 'Registrarse y Conectar' : 'Iniciar Sesión'),
+                          onPressed: () => _syncData(true),
+                          icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                          label: const Text("Respaldar", style: TextStyle(fontSize: 13)),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          // Section 3: Offline Local Backup
-          const SizedBox(height: 16),
-          Card(
-            elevation: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Copia de Seguridad Offline (Local)',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+                    ],
+                  ),
+                ] else ...[
+                  // Logged out / offline state
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _isSignUpMode ? 'Crear Cuenta' : 'Iniciar Sesión',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textPrimary),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _isSignUpMode = !_isSignUpMode;
+                          });
+                        },
+                        child: Text(
+                          _isSignUpMode ? '¿Ya tienes cuenta? Ingresa' : '¿No tienes cuenta? Regístrate',
+                          style: const TextStyle(color: primaryColor, fontSize: 12),
                         ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) de forma local sin usar internet.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                  const Divider(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BackupRestoreScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.sd_storage_outlined),
-                      label: const Text('Gestionar Copias Locales'),
+
+                  TextFormField(
+                    controller: _authEmailController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'Correo Electrónico',
+                      prefixIcon: Icon(Icons.email_outlined, color: textSecondary, size: 18),
                     ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _authPasswordController,
+                    style: const TextStyle(color: textPrimary, fontSize: 13),
+                    decoration: const InputDecoration(
+                      hintText: 'Contraseña (mín. 6 caracteres)',
+                      prefixIcon: Icon(Icons.lock_outline, color: textSecondary, size: 18),
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 14),
+
+                  if (authProvider.isLoading)
+                    const Center(child: CircularProgressIndicator(color: primaryColor))
+                  else
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _handleAuthAction,
+                        icon: Icon(_isSignUpMode ? Icons.person_add_outlined : Icons.login_outlined, size: 18),
+                        label: Text(_isSignUpMode ? 'Registrarse y Conectar' : 'Iniciar Sesión'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Section 3: Offline Local Backup
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF262A34), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.save_alt_outlined, color: tertiaryColor, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Copia de Seguridad Offline',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) en almacenamiento físico sin internet.',
+                  style: TextStyle(fontSize: 12, color: textSecondary),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BackupRestoreScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.folder_outlined, color: tertiaryColor, size: 18),
+                    label: const Text('Gestionar Copias Locales', style: TextStyle(color: textPrimary, fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF262A34)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Quick Info Footer
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.verified, color: primaryColor, size: 14),
+                  SizedBox(width: 4),
+                  Text(
+                    'Budapp Pro • Build 2.4.1',
+                    style: TextStyle(fontSize: 11, color: textSecondary),
                   ),
                 ],
               ),
-            ),
+              Text(
+                'Cifrado AES-256',
+                style: TextStyle(fontSize: 11, color: textSecondary),
+              ),
+            ],
           ),
+          const SizedBox(height: 20),
           const SizedBox(height: 16),
 
           // Section 4: Color customization

@@ -72,200 +72,135 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final colorAccent = themeProvider.lightAccent;
 
-    // Slate/Blue corporate design colors
-    const colorBgLight = Color(0xFFF8FAFC);
-    const colorCardLight = Colors.white;
-    const colorPrimary = Color(0xFF0F172A); // Slate 900
-    const colorSecondary = Color(0xFF1E293B); // Slate 800
-    const colorTextPrimary = Color(0xFF111827); // Gray 900
-    const colorTextSecondary = Color(0xFF6B7280); // Gray 500
-    const colorError = Color(0xFFDC2626); // Red 600
+    // Stitch OLED Slate Design Tokens
+    const colorBgDark = Color(0xFF0F131C);
+    const colorSurface = Color(0xFF1C1F29);
+    const colorSurfaceHigh = Color(0xFF262A34);
+    const colorPrimary = Color(0xFF3B82F6);
+    const colorSecondary = Color(0xFF4EDEA3);
+    const colorTertiary = Color(0xFFFFB95F);
+    const colorTextPrimary = Color(0xFFDFE2EF);
+    const colorTextSecondary = Color(0xFFC2C6D6);
+    const colorError = Color(0xFFFFB4AB);
+
+    final appTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: colorBgDark,
+      colorScheme: ColorScheme.dark(
+        primary: colorPrimary,
+        onPrimary: Colors.white,
+        primaryContainer: const Color(0xFF002E6A),
+        onPrimaryContainer: const Color(0xFFADC6FF),
+        secondary: colorSecondary,
+        onSecondary: const Color(0xFF003824),
+        secondaryContainer: const Color(0x3300A572),
+        onSecondaryContainer: const Color(0xFF6FFBBE),
+        tertiary: colorTertiary,
+        onTertiary: const Color(0xFF472A00),
+        tertiaryContainer: const Color(0x33CA8100),
+        onTertiaryContainer: const Color(0xFFFFDDB8),
+        surface: colorSurface,
+        onSurface: colorTextPrimary,
+        onSurfaceVariant: colorTextSecondary,
+        error: colorError,
+        onError: const Color(0xFF690005),
+        outline: const Color(0xFF8C909F),
+        outlineVariant: const Color(0xFF262A34),
+      ),
+      cardTheme: CardThemeData(
+        color: colorSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFF262A34), width: 1.0),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: colorBgDark,
+        foregroundColor: colorTextPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: colorTextPrimary,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: colorPrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colorTextPrimary,
+          side: const BorderSide(color: Color(0xFF262A34), width: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF181B25),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF262A34), width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF262A34), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: colorPrimary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: colorError, width: 1),
+        ),
+        labelStyle: const TextStyle(color: colorTextSecondary, fontSize: 14),
+        floatingLabelStyle: const TextStyle(color: colorPrimary, fontWeight: FontWeight.bold),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xDA0F131C),
+        elevation: 0,
+        indicatorColor: colorPrimary.withOpacity(0.2),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const IconThemeData(color: colorPrimary);
+          }
+          return const IconThemeData(color: colorTextSecondary);
+        }),
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const TextStyle(color: colorPrimary, fontSize: 12, fontWeight: FontWeight.bold);
+          }
+          return const TextStyle(color: colorTextSecondary, fontSize: 12);
+        }),
+      ),
+    );
 
     return MaterialApp(
         title: 'Budapp',
         debugShowCheckedModeBanner: false,
-        
-        // Theme settings
-        themeMode: ThemeMode.system,
-        theme: ThemeData(
-          useMaterial3: true,
-          scaffoldBackgroundColor: colorBgLight,
-          colorScheme: ColorScheme.light(
-            primary: colorPrimary,
-            onPrimary: Colors.white,
-            secondary: colorSecondary,
-            onSecondary: Colors.white,
-            tertiary: colorAccent,
-            onTertiary: Colors.white,
-            surface: colorCardLight,
-            onSurface: colorTextPrimary,
-            error: colorError,
-            onError: Colors.white,
-            outlineVariant: Color(0xFFE2E8F0),
-          ),
-          
-          // Modern, clean, thin border card theme (Notion/Linear style)
-          cardTheme: CardThemeData(
-            color: colorCardLight,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.0),
-            ),
-            margin: const EdgeInsets.symmetric(vertical: 4),
-          ),
-
-          // Clean flat app bars
-          appBarTheme: const AppBarTheme(
-            backgroundColor: colorBgLight,
-            foregroundColor: colorTextPrimary,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            centerTitle: false,
-            titleTextStyle: TextStyle(
-              color: colorTextPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          // Modern primary corporate button style
-          filledButtonTheme: FilledButtonThemeData(
-            style: FilledButton.styleFrom(
-              backgroundColor: colorAccent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-          ),
-
-          // Clean outlined buttons
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colorPrimary,
-              side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-          ),
-
-          // Modern Stripe/Linear inputs style
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colorAccent, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: colorError, width: 1),
-            ),
-            labelStyle: const TextStyle(color: colorTextSecondary, fontSize: 14),
-            floatingLabelStyle: TextStyle(color: colorAccent, fontWeight: FontWeight.bold),
-          ),
-
-          // Bottom navigation bar styling
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            indicatorColor: colorAccent.withOpacity(0.08),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            iconTheme: MaterialStateProperty.resolveWith((states) {
-              if (states.contains(MaterialState.selected)) {
-                return IconThemeData(color: colorAccent);
-              }
-              return const IconThemeData(color: colorTextSecondary);
-            }),
-            labelTextStyle: MaterialStateProperty.resolveWith((states) {
-              if (states.contains(MaterialState.selected)) {
-                return TextStyle(color: colorAccent, fontSize: 12, fontWeight: FontWeight.bold);
-              }
-              return const TextStyle(color: colorTextSecondary, fontSize: 12);
-            }),
-          ),
-        ),
-
-        // Dark theme (Supporting corresponding slate shades)
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFF0F172A), // Slate 900
-          colorScheme: ColorScheme.dark(
-            primary: Colors.white,
-            onPrimary: const Color(0xFF0F172A),
-            secondary: const Color(0xFF334155), // Slate 700
-            onSecondary: Colors.white,
-            tertiary: themeProvider.darkAccent,
-            onTertiary: Colors.white,
-            surface: Color(0xFF1E293B), // Slate 800
-            onSurface: Colors.white,
-            error: Color(0xFFEF4444),
-            onError: Colors.white,
-            outlineVariant: Color(0xFF334155),
-          ),
-          cardTheme: CardThemeData(
-            color: const Color(0xFF1E293B),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: const BorderSide(color: Color(0xFF334155), width: 1.0),
-            ),
-            margin: const EdgeInsets.symmetric(vertical: 4),
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF0F172A),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            centerTitle: false,
-          ),
-          filledButtonTheme: FilledButtonThemeData(
-            style: FilledButton.styleFrom(
-              backgroundColor: themeProvider.darkAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white,
-              side: const BorderSide(color: Color(0xFF334155)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: const Color(0xFF1E293B),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF334155)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF334155)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: themeProvider.darkAccent, width: 1.5),
-            ),
-          ),
-        ),
+        themeMode: ThemeMode.dark,
+        theme: appTheme,
+        darkTheme: appTheme,
         
         // Localizations for datepicker and calendar widgets in Spanish
         localizationsDelegates: const [

@@ -237,8 +237,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
   @override
   Widget build(BuildContext context) {
     final servicesProvider = Provider.of<ServicesProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final accentColor = themeProvider.lightAccent;
     final currencyFormat = NumberFormat.currency(locale: 'es_AR', symbol: '\$', decimalDigits: 0);
     final normalizedQuery = _searchQuery.toLowerCase();
 
@@ -247,62 +245,192 @@ class _ServicesScreenState extends State<ServicesScreen> {
           service.category.toLowerCase().contains(normalizedQuery);
     }).toList();
     final groupedServices = _groupServicesByCategory(filteredServices);
+    final totalCount = servicesProvider.services.length;
+
+    const pageBackground = Color(0xFF0F131C);
+    const surfaceColor = Color(0xFF1C1F29);
+    const surfaceHighColor = Color(0xFF262A34);
+    const primaryColor = Color(0xFF3B82F6);
+    const secondaryColor = Color(0xFF4EDEA3);
+    const textPrimary = Color(0xFFDFE2EF);
+    const textSecondary = Color(0xFFC2C6D6);
 
     return Scaffold(
+      backgroundColor: pageBackground,
       appBar: AppBar(
-        title: const Text('Base de Servicios'),
+        backgroundColor: pageBackground,
+        surfaceTintColor: Colors.transparent,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Base de Servicios',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: surfaceHighColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$totalCount TOTAL',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Text(
+              'Catálogo de tarifas y mano de obra EMGI',
+              style: TextStyle(fontSize: 11, color: textSecondary),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: _downloadServicesTemplate,
-            tooltip: 'Descargar base Excel',
-            icon: const Icon(Icons.download_outlined),
+            tooltip: 'Exportar base Excel',
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: surfaceHighColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.download_outlined, color: textSecondary, size: 18),
+            ),
           ),
           IconButton(
             onPressed: _isImportingServices ? null : _importServicesFromExcel,
             tooltip: 'Importar servicios desde Excel',
-            icon: _isImportingServices
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.upload_file_outlined),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: surfaceHighColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: _isImportingServices
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
+                    )
+                  : const Icon(Icons.post_add_outlined, color: textSecondary, size: 18),
+            ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Search Input Bar
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar servicio o categoría...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF181B25),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF262A34), width: 1),
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: textPrimary, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Buscar servicio, repuesto o categoría...',
+                  hintStyle: const TextStyle(color: Color(0xFF8C909F), fontSize: 13),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF8C909F), size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close, color: textSecondary, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
             ),
           ),
+
+          // Category Chips Row
+          if (groupedServices.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: Text('Todos (${filteredServices.length})'),
+                    selected: _searchQuery.isEmpty,
+                    onSelected: (selected) {
+                      setState(() {
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                    },
+                    selectedColor: const Color(0xFF002E6A),
+                    backgroundColor: surfaceHighColor,
+                    labelStyle: TextStyle(
+                      color: _searchQuery.isEmpty ? const Color(0xFFADC6FF) : textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    side: BorderSide.none,
+                  ),
+                  const SizedBox(width: 8),
+                  ...groupedServices.keys.map((category) {
+                    final isSelected = _searchQuery.toLowerCase() == category.toLowerCase();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            _searchController.text = selected ? category : '';
+                            _searchQuery = selected ? category : '';
+                          });
+                        },
+                        selectedColor: const Color(0xFF002E6A),
+                        backgroundColor: surfaceHighColor,
+                        labelStyle: TextStyle(
+                          color: isSelected ? const Color(0xFFADC6FF) : textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        side: BorderSide.none,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
 
           // Services List
           Expanded(
@@ -312,111 +440,189 @@ class _ServicesScreenState extends State<ServicesScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          _searchQuery.isEmpty ? Icons.engineering_outlined : Icons.search_off,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.outlineVariant,
+                          _searchQuery.isEmpty ? Icons.handyman_outlined : Icons.search_off,
+                          size: 56,
+                          color: textSecondary,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           _searchQuery.isEmpty
                               ? 'Aún no has guardado servicios frecuentes'
                               : 'No se encontraron servicios',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: textPrimary, fontSize: 14),
                         ),
                         const SizedBox(height: 4),
                         if (_searchQuery.isEmpty)
-                          Text(
+                          const Text(
                             'Agrega servicios por categoría para autocompletar tus presupuestos',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
+                            style: TextStyle(fontSize: 12, color: textSecondary),
                           ),
                       ],
                     ),
                   )
                 : ListView(
+                    padding: const EdgeInsets.only(bottom: 80),
                     children: groupedServices.entries.map((entry) {
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        child: ExpansionTile(
-                          key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
-                          initiallyExpanded: _searchQuery.isNotEmpty,
-                          leading: Icon(Icons.category_outlined, color: accentColor),
-                          title: Text(
-                            entry.key,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text('${entry.value.length} servicio${entry.value.length == 1 ? '' : 's'}'),
-                          children: entry.value.asMap().entries.map((itemEntry) {
-                            final index = itemEntry.key;
-                            final item = itemEntry.value;
-                            return Column(
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF262A34), width: 1),
+                        ),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: ExpansionTile(
+                            key: Key('${entry.key}_${_searchQuery.isNotEmpty}'),
+                            initiallyExpanded: _searchQuery.isNotEmpty,
+                            leading: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: surfaceHighColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.devices_outlined, color: primaryColor, size: 20),
+                            ),
+                            title: Text(
+                              entry.key,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            subtitle: Row(
                               children: [
-                                if (index > 0)
-                                  Divider(
-                                    height: 1,
-                                    thickness: 0.5,
-                                    indent: 16,
-                                    endIndent: 16,
-                                    color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: secondaryColor,
+                                    shape: BoxShape.circle,
                                   ),
-                                ListTile(
-                                  title: Text(
-                                    item.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 4),
-                                      Text(item.category),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        currencyFormat.format(item.price),
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'edit') {
-                                        _showAddEditDialog(item: item);
-                                      } else if (value == 'delete') {
-                                        _confirmDelete(item);
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(
-                                        value: 'edit',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.edit, size: 18),
-                                            SizedBox(width: 8),
-                                            Text('Editar'),
-                                          ],
-                                        ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'delete',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.delete, color: Colors.red, size: 18),
-                                            SizedBox(width: 8),
-                                            Text('Eliminar', style: TextStyle(color: Colors.red)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${entry.value.length} SERVICIO${entry.value.length == 1 ? '' : 'S'} DISPONIBLE${entry.value.length == 1 ? '' : 'S'}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: textSecondary,
                                   ),
                                 ),
                               ],
-                            );
-                          }).toList(),
+                            ),
+                            children: entry.value.asMap().entries.map((itemEntry) {
+                              final index = itemEntry.key;
+                              final item = itemEntry.value;
+                              return Column(
+                                children: [
+                                  if (index > 0)
+                                    const Divider(
+                                      height: 1,
+                                      thickness: 0.5,
+                                      indent: 16,
+                                      endIndent: 16,
+                                      color: Color(0xFF262A34),
+                                    ),
+                                  Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF181B25),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                item.name,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: textPrimary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                item.category,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Row(
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  currencyFormat.format(item.price),
+                                                  style: const TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: primaryColor,
+                                                  ),
+                                                ),
+                                                const Text(
+                                                  'Mano de obra',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: secondaryColor,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            PopupMenuButton<String>(
+                                              icon: const Icon(Icons.more_vert, color: textSecondary, size: 18),
+                                              onSelected: (value) {
+                                                if (value == 'edit') {
+                                                  _showAddEditDialog(item: item);
+                                                } else if (value == 'delete') {
+                                                  _confirmDelete(item);
+                                                }
+                                              },
+                                              itemBuilder: (context) => [
+                                                const PopupMenuItem(
+                                                  value: 'edit',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.edit, size: 18),
+                                                      SizedBox(width: 8),
+                                                      Text('Editar'),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const PopupMenuItem(
+                                                  value: 'delete',
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.delete, color: Colors.red, size: 18),
+                                                      SizedBox(width: 8),
+                                                      Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
                         ),
                       );
                     }).toList(),
@@ -427,10 +633,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         tooltip: 'Guardar Servicio',
-        backgroundColor: accentColor,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: const Icon(Icons.add),
       ),
     );
@@ -498,7 +704,7 @@ class _CreateCategoryDialogState extends State<_CreateCategoryDialog> {
 class _AddEditServiceDialog extends StatefulWidget {
   final ServiceItem? item;
 
-  const _AddEditServiceDialog({super.key, this.item});
+  const _AddEditServiceDialog({this.item});
 
   @override
   State<_AddEditServiceDialog> createState() => _AddEditServiceDialogState();

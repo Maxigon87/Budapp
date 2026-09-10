@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -68,7 +67,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         'status': 'checking_reachability',
       }).timeout(const Duration(seconds: 6));
 
-      final doc = await testDocRef.get().timeout(const Duration(seconds: 6));
+      await testDocRef.get().timeout(const Duration(seconds: 6));
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
@@ -154,7 +153,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
