@@ -1,46 +1,829 @@
 <!DOCTYPE html>
-<html>
+<html lang="es" data-theme="light">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Budapp - Aplicación de Gestión de Presupuestos y Cotizaciones">
+  <meta name="theme-color" content="#0F172A">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>Budapp Web - Presupuestos y Servicios</title>
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Budapp">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <!-- Remix Icons for crisp Material-like icons -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
-  <title>Budapp</title>
-  <link rel="manifest" href="manifest.json">
+  <!-- SheetJS XLSX CDN for Excel import/export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- html2pdf.js / jsPDF CDN for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- ================= 0. WELCOME / LOGIN SCREEN (GATED IF NOT AUTHENTICATED) ================= -->
+  <div id="view-welcome" class="welcome-screen-wrapper">
+    <div class="welcome-container">
+      
+      <!-- Brand Logo Card -->
+      <div class="welcome-logo-card">
+        <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="welcome-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
+      </div>
+
+      <!-- Welcome Titles -->
+      <h1 class="welcome-headline">Presupuestos</h1>
+      <span class="welcome-subheadline">BUDAPP</span>
+
+      <p class="welcome-tagline">Gestiona tus presupuestos, clientes y servicios en cualquier dispositivo.</p>
+
+      <!-- Welcome View Option 1: Action Selector Buttons -->
+      <div id="welcome-options-box" class="welcome-actions-box">
+        <button class="btn btn-accent btn-block btn-lg" id="btn-welcome-auth">
+          <i class="ri-login-box-line"></i> Iniciar Sesión / Crear Cuenta
+        </button>
+
+        <button class="btn btn-outline btn-block btn-lg" id="btn-welcome-guest">
+          <i class="ri-user-3-line"></i> Entrar como Invitado
+        </button>
+
+        <div class="welcome-divider">
+          <span>Configuración</span>
+        </div>
+
+        <button class="btn btn-subtle-blue btn-block" id="btn-welcome-test-firebase">
+          <i class="ri-cloud-line"></i> Probar Conexión con Firebase
+        </button>
+      </div>
+
+      <!-- Welcome View Option 2: Authentication Form (Hidden by default) -->
+      <div id="welcome-auth-box" class="welcome-auth-card card" style="display: none;">
+        <div class="auth-header">
+          <button class="btn-text" id="btn-back-to-welcome-options">
+            <i class="ri-arrow-left-line"></i> Volver
+          </button>
+          <h3 id="auth-title">Iniciar Sesión</h3>
+        </div>
+
+        <p class="auth-subtitle" id="auth-subtitle-text">Accede a tu cuenta para sincronizar tus presupuestos en la nube.</p>
+
+        <form id="form-welcome-auth" class="margin-top-md">
+          <div class="form-group">
+            <label class="form-label">Correo Electrónico</label>
+            <div class="input-with-icon">
+              <i class="ri-mail-line input-icon"></i>
+              <input type="email" id="auth-email-input" class="form-input icon-indent" placeholder="correo@ejemplo.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Contraseña (mín. 6 caracteres)</label>
+            <div class="input-with-icon">
+              <i class="ri-lock-line input-icon"></i>
+              <input type="password" id="auth-password-input" class="form-input icon-indent" placeholder="••••••••" minlength="6" required>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-accent btn-block btn-lg margin-top-md" id="btn-submit-auth">
+            <i class="ri-login-circle-line"></i> Iniciar Sesión
+          </button>
+
+          <button type="button" class="btn-text btn-block text-center margin-top-md" id="btn-toggle-auth-mode">
+            ¿No tienes cuenta? Regístrate aquí
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= MAIN APPLICATION WRAPPER ================= -->
+  <div id="app" class="app-layout" style="display: none;">
+
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="brand-logo-wrap">
+          <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="brand-logo-img" id="app-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
+        </div>
+        <div class="brand-title-wrap">
+          <span class="brand-title">Budapp</span>
+          <span class="brand-subtitle">Web Version</span>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <!-- Sync Indicator -->
+        <button class="badge-button cloud-badge" id="sync-status-badge" title="Estado de sincronización">
+          <i class="ri-cloud-off-line text-warning" id="sync-icon"></i>
+          <span class="badge-text" id="sync-status-text">Local</span>
+        </button>
+
+        <!-- User Logout Button -->
+        <button class="icon-btn" id="btn-top-logout" title="Cerrar Sesión / Salir">
+          <i class="ri-logout-box-r-line"></i>
+        </button>
+
+        <!-- Quick Theme Toggle -->
+        <button class="icon-btn" id="btn-toggle-dark" title="Cambiar Tema Claro/Oscuro">
+          <i class="ri-moon-line" id="theme-toggle-icon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Desktop Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="sidebar-logo" onerror="this.onerror=null; this.src='favicon.png'">
+        <span class="sidebar-brand-name">Budapp</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="home">
+          <i class="ri-dashboard-3-line"></i>
+          <span>Inicio</span>
+        </button>
+        <button class="nav-item" data-tab="history">
+          <i class="ri-history-line"></i>
+          <span>Historial</span>
+        </button>
+        <button class="nav-item" data-tab="services">
+          <i class="ri-tools-line"></i>
+          <span>Servicios</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <i class="ri-settings-4-line"></i>
+          <span>Configuración</span>
+        </button>
+      </nav>
+      <div class="sidebar-cta">
+        <button class="btn btn-accent btn-block" id="sidebar-btn-new-quote">
+          <i class="ri-add-line"></i>
+          <span>Nuevo Presupuesto</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ================= 1. INICIO (DASHBOARD) ================= -->
+      <section id="view-home" class="tab-view active">
+        <div class="view-container">
+          
+          <!-- Company Profile Header Banner -->
+          <div class="company-brand-header">
+            <div class="company-logo-preview" id="dash-company-logo">
+              <i class="ri-building-4-line"></i>
+            </div>
+            <div class="company-brand-info">
+              <h2 id="dash-company-name">Nombre de tu Empresa</h2>
+              <p id="dash-company-details">Configura los datos de tu empresa en Ajustes</p>
+            </div>
+          </div>
+
+          <!-- Alert Banner when company is not configured -->
+          <div class="alert-card alert-warning" id="alert-missing-company" style="display: none;">
+            <i class="ri-error-warning-line alert-icon"></i>
+            <div class="alert-content">
+              <h4>Faltan Datos de la Empresa</h4>
+              <p>Configura tu logo de negocio y contacto en Ajustes para incluirlos en los presupuestos generados.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" id="btn-fix-company">Configurar</button>
+          </div>
+
+          <!-- Total Income Card with Financial Bezier Growth Curve Canvas -->
+          <div class="income-card">
+            <canvas id="income-chart-canvas"></canvas>
+            <div class="income-card-content">
+              <div class="income-header">
+                <span>💰 Ingresos Totales</span>
+                <i class="ri-line-chart-line"></i>
+              </div>
+              <div class="income-amount" id="dash-total-earnings">$0</div>
+              <div class="income-footer" id="dash-accepted-count">0 presupuestos aprobados</div>
+            </div>
+          </div>
+
+          <!-- Grid Statistics -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-accent">
+                <i class="ri-file-text-line"></i>
+              </div>
+              <div class="stat-data">
+                <span class="stat-title">Emitidos</span>
+                <span class="stat-value" id="dash-stat-total">0</span>
+                <span class="stat-subtitle">Presupuestos totales</span>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon icon-amber">
+                <i class="ri-time-line"></i>
+              </div>
+              <div class="stat-data">
+                <span class="stat-title">Pendientes</span>
+                <span class="stat-value" id="dash-stat-pending">0</span>
+                <span class="stat-subtitle">Esperando aprobación</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Bar -->
+          <div class="section-header">
+            <h3>⚡ Acciones Rápidas</h3>
+          </div>
+          <div class="quick-actions-grid">
+            <button class="quick-action-btn" id="qa-new">
+              <div class="qa-icon icon-blue"><i class="ri-add-circle-line"></i></div>
+              <span>Nuevo</span>
+            </button>
+            <button class="quick-action-btn" id="qa-history">
+              <div class="qa-icon icon-amber"><i class="ri-history-line"></i></div>
+              <span>Historial</span>
+            </button>
+            <button class="quick-action-btn" id="qa-services">
+              <div class="qa-icon icon-green"><i class="ri-tools-line"></i></div>
+              <span>Servicios</span>
+            </button>
+            <button class="quick-action-btn" id="qa-settings">
+              <div class="qa-icon icon-slate"><i class="ri-settings-4-line"></i></div>
+              <span>Ajustes</span>
+            </button>
+          </div>
+
+          <!-- Recent Quotes List Header -->
+          <div class="section-header space-between margin-top-lg">
+            <h3>Presupuestos Recientes</h3>
+            <button class="btn btn-sm btn-accent" id="dash-btn-new-quote">
+              <i class="ri-add-line"></i> Nuevo
+            </button>
+          </div>
+
+          <!-- Recent Quotes Container -->
+          <div id="dash-recent-quotes-list" class="quotes-list-container">
+            <!-- Dynamic items rendered via JavaScript -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= 2. HISTORIAL (QUOTES HISTORY) ================= -->
+      <section id="view-history" class="tab-view">
+        <div class="view-container">
+          <div class="view-header">
+            <h2>Historial de Presupuestos</h2>
+          </div>
+
+          <!-- Filter & Search Controls Bar -->
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <i class="ri-search-line search-icon"></i>
+              <input type="text" id="hist-search-input" class="form-input search-input" placeholder="Cliente o N°...">
+              <button class="btn-clear-search" id="hist-clear-search" style="display:none;"><i class="ri-close-line"></i></button>
+            </div>
+            
+            <div class="filter-dropdown-wrap">
+              <select id="hist-status-filter" class="form-select">
+                <option value="Todos">Todos</option>
+                <option value="Pendiente">Pendientes</option>
+                <option value="Aceptado">Aceptados</option>
+                <option value="Rechazado">Rechazados</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Date Filter Chips -->
+          <div class="filter-chips-row">
+            <button class="filter-chip" id="btn-date-filter">
+              <i class="ri-calendar-line"></i>
+              <span id="date-filter-label">Cualquier fecha</span>
+            </button>
+            <button class="btn-text btn-text-danger" id="btn-clear-filters" style="display:none;">
+              Limpiar filtros
+            </button>
+          </div>
+
+          <!-- Quotes List Container -->
+          <div id="history-quotes-list" class="quotes-list-container margin-top-md">
+            <!-- Dynamic content -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. SERVICIOS (SERVICES CATALOG) ================= -->
+      <section id="view-services" class="tab-view">
+        <div class="view-container">
+          <div class="view-header space-between">
+            <h2>Base de Servicios</h2>
+            <div class="header-actions">
+              <button class="btn btn-outline btn-icon-only" id="btn-download-services-template" title="Descargar base Excel">
+                <i class="ri-download-line"></i>
+              </button>
+              <button class="btn btn-outline btn-icon-only" id="btn-import-services-excel" title="Importar desde Excel">
+                <i class="ri-upload-2-line"></i>
+              </button>
+              <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <i class="ri-search-line search-icon"></i>
+              <input type="text" id="srv-search-input" class="form-input search-input" placeholder="Buscar servicio o categoría...">
+            </div>
+          </div>
+
+          <!-- Services List Accordion Grouped by Category -->
+          <div id="services-grouped-container" class="accordion-container margin-top-md">
+            <!-- Dynamic categories rendered here -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= 4. CONFIGURACIÓN (SETTINGS) ================= -->
+      <section id="view-settings" class="tab-view">
+        <div class="view-container">
+          <div class="view-header">
+            <h2>Configuración</h2>
+          </div>
+
+          <!-- Section 1: Company Profile Form -->
+          <div class="card margin-bottom-lg">
+            <div class="card-header">
+              <i class="ri-building-4-line card-icon"></i>
+              <h3>Perfil de la Empresa / Técnico</h3>
+            </div>
+            <div class="card-body">
+              <form id="form-company-settings">
+                <!-- Logo Avatar Picker -->
+                <div class="logo-picker-container">
+                  <div class="logo-avatar" id="logo-avatar-preview">
+                    <i class="ri-building-line" id="logo-placeholder-icon"></i>
+                    <img id="logo-img-element" src="" alt="Logo" style="display:none;">
+                  </div>
+                  <div class="logo-actions">
+                    <label for="logo-file-input" class="btn btn-sm btn-outline">
+                      <i class="ri-camera-line"></i> Cambiar Logo
+                    </label>
+                    <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btn-remove-logo" style="display:none;">
+                      <i class="ri-delete-bin-line"></i> Quitar
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group margin-top-md">
+                  <label class="form-label">Nombre Comercial *</label>
+                  <input type="text" id="company-name" class="form-input" placeholder="Ej. ElectroServicios Ruiz" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Dirección Comercial *</label>
+                  <input type="text" id="company-address" class="form-input" placeholder="Ej. Av. Principal 1234" required>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Teléfono de Contacto *</label>
+                    <input type="tel" id="company-phone" class="form-input" placeholder="Ej. +54 9 11 1234-5678" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Correo Electrónico *</label>
+                    <input type="email" id="company-email" class="form-input" placeholder="contacto@empresa.com" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Sitio Web (Opcional)</label>
+                  <input type="url" id="company-website" class="form-input" placeholder="https://miempresa.com">
+                </div>
+
+                <button type="submit" class="btn btn-accent btn-block margin-top-md">
+                  <i class="ri-save-line"></i> Guardar Datos Perfil
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Section 2: Firebase Cloud Sync -->
+          <div class="card margin-bottom-lg">
+            <div class="card-header">
+              <i class="ri-cloud-line card-icon"></i>
+              <h3>Sincronización en la Nube (Firebase)</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Respalda tus presupuestos y base de servicios de forma segura para recuperarlos en cualquier dispositivo.</p>
+              
+              <div class="cloud-status-box" id="cloud-session-box">
+                <div class="status-info">
+                  <i class="ri-cloud-line status-icon"></i>
+                  <div>
+                    <h4 id="cloud-user-status">Modo Local Offline</h4>
+                    <p id="cloud-user-email">Los datos se guardan únicamente en el navegador actual.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cloud-actions margin-top-md">
+                <button class="btn btn-outline" id="btn-cloud-restore">
+                  <i class="ri-download-cloud-2-line"></i> Restaurar Nube
+                </button>
+                <button class="btn btn-accent" id="btn-cloud-backup">
+                  <i class="ri-upload-cloud-2-line"></i> Respaldar Nube
+                </button>
+                <button class="btn btn-outline-danger" id="btn-settings-logout">
+                  <i class="ri-logout-box-r-line"></i> Cerrar Sesión
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Offline Backup & Restore -->
+          <div class="card margin-bottom-lg">
+            <div class="card-header">
+              <i class="ri-sd-card-line card-icon"></i>
+              <h3>Copia de Seguridad Offline (Local)</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Exporta o restaura toda tu base de datos (empresa, servicios y presupuestos) en un archivo JSON sin necesidad de internet.</p>
+              
+              <div class="form-row margin-top-md">
+                <button class="btn btn-outline" id="btn-export-json">
+                  <i class="ri-download-2-line"></i> Exportar Copia JSON
+                </button>
+                <button class="btn btn-outline" id="btn-import-json">
+                  <i class="ri-upload-2-line"></i> Importar Copia JSON
+                </button>
+                <input type="file" id="json-file-input" accept=".json" style="display:none;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Color customization & Dark Mode -->
+          <div class="card">
+            <div class="card-header">
+              <i class="ri-palette-line card-icon"></i>
+              <h3>Aspecto y Personalización</h3>
+            </div>
+            <div class="card-body">
+              <p class="card-description">Elige el color principal de la aplicación para adaptarlo a la identidad de tu empresa.</p>
+
+              <!-- Color Palette Selector -->
+              <div class="color-picker-row margin-top-md" id="color-palette-container">
+                <!-- Color dots rendered dynamically -->
+              </div>
+              <div class="selected-color-label" id="selected-color-name">
+                Color seleccionado: Azul
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button for Mobile -->
+    <button class="fab-btn" id="fab-new-quote" title="Nuevo Presupuesto">
+      <i class="ri-add-line"></i>
+    </button>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item active" data-tab="home">
+        <i class="ri-dashboard-3-line"></i>
+        <span>Inicio</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="history">
+        <i class="ri-history-line"></i>
+        <span>Historial</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="services">
+        <i class="ri-tools-line"></i>
+        <span>Servicios</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="settings">
+        <i class="ri-settings-4-line"></i>
+        <span>Ajustes</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ================= MODALS & DIALOGS ================= -->
+
+  <!-- Modal: Nuevo Presupuesto -->
+  <div class="modal-backdrop" id="modal-new-quote" style="display: none;">
+    <div class="modal-container modal-large">
+      <div class="modal-header">
+        <h3>Nuevo Presupuesto</h3>
+        <button class="modal-close" id="close-modal-quote">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-new-quote">
+          
+          <!-- Quote Metadata Card -->
+          <div class="meta-card">
+            <span class="meta-item">N° Presupuesto: <strong id="nq-number">0001</strong></span>
+            <span class="meta-item">Fecha: <strong id="nq-date">--/--/----</strong></span>
+          </div>
+
+          <!-- Section: Client Details -->
+          <div class="form-section-title">Datos del Cliente</div>
+          <div class="card card-inner">
+            <div class="form-group">
+              <label class="form-label">Nombre del Cliente *</label>
+              <input type="text" id="nq-client-name" class="form-input" placeholder="Nombre completo del cliente" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" id="nq-client-phone" class="form-input" placeholder="Ej. 11 2345 6789">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Dirección</label>
+                <input type="text" id="nq-client-address" class="form-input" placeholder="Ej. Calle 123">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Add Service -->
+          <div class="form-section-title">Agregar Servicio / Concepto</div>
+          <div class="card card-inner">
+            <div class="form-group">
+              <label class="form-label">Categoría de servicios frecuentes</label>
+              <select id="nq-service-category" class="form-select">
+                <option value="Todas">Todas</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Buscar o escribir servicio...</label>
+              <div class="autocomplete-wrap">
+                <input type="text" id="nq-service-name" class="form-input" placeholder="Escribe o selecciona servicio...">
+                <div class="autocomplete-list" id="nq-autocomplete-list"></div>
+              </div>
+            </div>
+
+            <div class="form-row align-items-end">
+              <div class="form-group flex-grow">
+                <label class="form-label">Precio ($)</label>
+                <input type="number" id="nq-service-price" class="form-input" placeholder="0" min="0" step="any">
+              </div>
+              <div class="form-group flex-grow">
+                <label class="form-label">Cantidad</label>
+                <input type="number" id="nq-service-qty" class="form-input" value="1" min="1">
+              </div>
+              <div class="form-group">
+                <button type="button" class="btn btn-accent" id="nq-btn-add-item">
+                  <i class="ri-add-line"></i> Añadir
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Line Items Table -->
+          <div class="form-section-title">Servicios Añadidos</div>
+          <div class="card card-inner">
+            <div id="nq-items-container">
+              <div class="empty-state-text" id="nq-empty-items">Aún no has agregado ningún servicio a este presupuesto.</div>
+            </div>
+
+            <!-- Subtotal & Discount Calculation Box -->
+            <div class="totals-breakdown-box" id="nq-totals-box" style="display:none;">
+              <div class="total-row" id="nq-subtotal-row" style="display:none;">
+                <span>Subtotal</span>
+                <span id="nq-subtotal-val">$0</span>
+              </div>
+              <div class="total-row discount-text" id="nq-discount-row" style="display:none;">
+                <span id="nq-discount-label">Descuento</span>
+                <span id="nq-discount-val">-$0</span>
+              </div>
+              <div class="total-row main-total-row">
+                <span>TOTAL</span>
+                <span id="nq-total-val">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Optional Discount -->
+          <div class="form-section-title">Descuento (opcional)</div>
+          <div class="card card-inner">
+            <div class="form-group">
+              <label class="form-label">Motivo del descuento</label>
+              <input type="text" id="nq-discount-reason" class="form-input" placeholder="Ej. Cliente frecuente, Pago en efectivo...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Porcentaje de descuento (%)</label>
+              <input type="number" id="nq-discount-pct" class="form-input" placeholder="Ej. 10" min="0" max="100" step="any">
+            </div>
+          </div>
+
+          <!-- Section: Optional Observations -->
+          <div class="form-section-title">Observaciones (opcional)</div>
+          <div class="form-group">
+            <textarea id="nq-observations" class="form-textarea" rows="3" placeholder="Ej. Forma de pago: Transferencia. Validez: 15 días. Garantía por 3 meses..."></textarea>
+          </div>
+
+          <!-- Dialog Submit Buttons -->
+          <div class="modal-footer-buttons margin-top-lg">
+            <button type="button" class="btn btn-outline flex-grow" id="nq-btn-save-only">
+              Guardar Historial
+            </button>
+            <button type="submit" class="btn btn-accent flex-grow" id="nq-btn-save-share">
+              Guardar y Generar PDF
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Quote Details View & PDF Export -->
+  <div class="modal-backdrop" id="modal-quote-details" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="qd-title">Presupuesto #0000</h3>
+        <div class="modal-header-actions">
+          <button class="btn-icon-danger" id="qd-btn-delete" title="Eliminar"><i class="ri-delete-bin-line"></i></button>
+          <button class="modal-close" id="close-modal-details">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Status Dropdown Bar -->
+        <div class="status-modifier-row">
+          <label><strong>Estado:</strong></label>
+          <select id="qd-status-select" class="form-select status-select">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Aceptado">Aceptado</option>
+            <option value="Rechazado">Rechazado</option>
+          </select>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Client Info Block -->
+        <div class="detail-section">
+          <h4 class="section-label">INFORMACIÓN DEL CLIENTE</h4>
+          <p><strong>Nombre:</strong> <span id="qd-client-name">--</span></p>
+          <p id="qd-phone-row"><strong>Teléfono:</strong> <span id="qd-client-phone">--</span></p>
+          <p id="qd-address-row"><strong>Dirección:</strong> <span id="qd-client-address">--</span></p>
+          <p><strong>Fecha:</strong> <span id="qd-date">--/--/----</span></p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Services Table -->
+        <div class="detail-section">
+          <h4 class="section-label">DETALLE DE SERVICIOS</h4>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Cant.</th>
+                <th>Detalle</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="qd-items-body">
+              <!-- Rendered lines -->
+            </tbody>
+          </table>
+
+          <div class="detail-totals-box">
+            <div id="qd-subtotal-row" style="display:none;">
+              <span>Subtotal:</span> <span id="qd-subtotal-val">$0</span>
+            </div>
+            <div id="qd-discount-row" style="display:none;" class="text-danger">
+              <span id="qd-discount-label">Descuento:</span> <span id="qd-discount-val">-$0</span>
+            </div>
+            <div class="main-total">
+              <strong>Total: <span id="qd-total-val">$0</span></strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observations Block -->
+        <div class="detail-section" id="qd-obs-section" style="display:none;">
+          <hr class="divider">
+          <h4 class="section-label">OBSERVACIONES</h4>
+          <p class="font-italic" id="qd-observations"></p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Action Buttons -->
+        <div class="modal-footer-buttons">
+          <button class="btn btn-outline flex-grow" id="qd-btn-print-pdf">
+            <i class="ri-printer-line"></i> Imprimir / PDF
+          </button>
+          <button class="btn btn-accent flex-grow" id="qd-btn-share-whatsapp">
+            <i class="ri-whatsapp-line"></i> Compartir
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add/Edit Service -->
+  <div class="modal-backdrop" id="modal-service-form" style="display: none;">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3 id="sf-title">Nuevo Servicio Frecuente</h3>
+        <button class="modal-close" id="close-modal-service">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-service">
+          <input type="hidden" id="sf-id">
+          
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <div class="input-with-button">
+              <select id="sf-category-select" class="form-select"></select>
+              <button type="button" class="btn btn-outline" id="sf-btn-new-cat" title="Nueva categoría">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre del Servicio *</label>
+            <input type="text" id="sf-name" class="form-input" placeholder="Ej. Formateo PC + S.O." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Precio sugerido ($) *</label>
+            <input type="number" id="sf-price" class="form-input" placeholder="15000" min="0" step="any" required>
+          </div>
+
+          <div class="modal-footer-buttons margin-top-md">
+            <button type="button" class="btn btn-outline flex-grow" id="sf-btn-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-accent flex-grow">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New Category Dialog -->
+  <div class="modal-backdrop" id="modal-category-form" style="display: none;">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3>Nueva categoría</h3>
+        <button class="modal-close" id="close-modal-category">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-category">
+          <div class="form-group">
+            <label class="form-label">Nombre de la categoría *</label>
+            <input type="text" id="cat-name-input" class="form-input" placeholder="Ej. Mantenimiento" required>
+          </div>
+          <div class="modal-footer-buttons margin-top-md">
+            <button type="button" class="btn btn-outline flex-grow" id="cat-btn-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-accent flex-grow">Agregar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Post Auth Sync Option Dialog -->
+  <div class="modal-backdrop" id="modal-post-auth-sync" style="display: none;">
+    <div class="modal-container modal-small">
+      <div class="modal-header">
+        <h3>Sincronización de Datos</h3>
+      </div>
+      <div class="modal-body">
+        <p class="card-description">Has iniciado sesión correctamente. ¿Cómo deseas proceder con tus datos?</p>
+        <div class="sync-options-list margin-top-md">
+          <button class="btn btn-accent btn-block" id="btn-sync-upload">
+            <i class="ri-upload-cloud-line"></i> Respaldar Locales a la Nube
+          </button>
+          <button class="btn btn-outline btn-block margin-top-sm" id="btn-sync-download">
+            <i class="ri-download-cloud-line"></i> Restaurar desde la Nube
+          </button>
+          <button class="btn btn-outline btn-block margin-top-sm" id="btn-sync-ignore">
+            Mantener Separado (Ignorar)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script src="js/app.js"></script>
 </body>
 </html>
