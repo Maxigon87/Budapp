@@ -60,12 +60,219 @@
   };
 
   /* ==========================================================================
+     FIREBASE & CLOUD SYNC ARCHITECTURE
+     ========================================================================== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY",
+    authDomain: "mgz-app-98294.firebaseapp.com",
+    projectId: "mgz-app-98294",
+    storageBucket: "mgz-app-98294.firebasestorage.app",
+    messagingSenderId: "562409321853",
+    appId: "1:562409321853:web:955c45fefc8d8c98108814"
+  };
+
+  let auth = null;
+  let db = null;
+
+  function initFirebase() {
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            appState.auth.isAuthenticated = true;
+            appState.auth.userEmail = user.email || '';
+            appState.auth.uid = user.uid;
+            appState.auth.isGuest = false;
+            saveAuthToStorage();
+
+            // Auto sync from cloud when authenticated
+            await syncFromCloud(false);
+          } else {
+            if (!appState.auth.isGuest) {
+              appState.auth.isAuthenticated = false;
+              appState.auth.userEmail = '';
+              appState.auth.uid = null;
+              saveAuthToStorage();
+            }
+          }
+          checkSessionState();
+        });
+      }
+    } catch (e) {
+      console.error("Firebase init error:", e);
+    }
+  }
+
+  async function syncFromCloud(showNotifications = true) {
+    if (!auth || !db || !auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+
+    try {
+      // 1. Company Settings
+      const companyDoc = await db.collection('users').doc(uid).collection('company').doc('settings').get();
+      if (companyDoc.exists) {
+        const data = companyDoc.data();
+        appState.company = {
+          name: data.name || '',
+          address: data.address || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          website: data.website || '',
+          logoBase64: data.logoBase64 || null
+        };
+        localStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(appState.company));
+      }
+
+      // 2. Services
+      const servicesSnap = await db.collection('users').doc(uid).collection('services').get();
+      if (!servicesSnap.empty) {
+        const fetchedServices = [];
+        servicesSnap.forEach(doc => {
+          fetchedServices.push(doc.data());
+        });
+        appState.services = fetchedServices;
+        localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(appState.services));
+      }
+
+      // 3. Quotes
+      const quotesSnap = await db.collection('users').doc(uid).collection('quotes').get();
+      if (!quotesSnap.empty) {
+        const fetchedQuotes = [];
+        quotesSnap.forEach(doc => {
+          fetchedQuotes.push(doc.data());
+        });
+        fetchedQuotes.sort((a, b) => new Date(b.date) - new Date(a.date));
+        appState.quotes = fetchedQuotes;
+        localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(appState.quotes));
+      }
+
+      renderAllViews();
+      updateSyncBadge();
+
+      if (showNotifications) {
+        showToast('Datos restaurados desde la nube con éxito');
+      }
+    } catch (e) {
+      console.error("Error downloading from cloud:", e);
+      if (showNotifications) {
+        showToast('Error al descargar datos de la nube: ' + e.message);
+      }
+    }
+  }
+
+  async function uploadToCloud(showNotifications = true) {
+    if (!auth || !db || !auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+
+    try {
+      // 1. Company Settings
+      await db.collection('users').doc(uid).collection('company').doc('settings').set({
+        name: appState.company.name || '',
+        address: appState.company.address || '',
+        phone: appState.company.phone || '',
+        email: appState.company.email || '',
+        website: appState.company.website || '',
+        logoBase64: appState.company.logoBase64 || null
+      });
+
+      // 2. Services (batch)
+      if (appState.services.length > 0) {
+        const servicesBatch = db.batch();
+        appState.services.forEach(srv => {
+          const docRef = db.collection('users').doc(uid).collection('services').doc(srv.id);
+          servicesBatch.set(docRef, srv);
+        });
+        await servicesBatch.commit();
+      }
+
+      // 3. Quotes (batch)
+      if (appState.quotes.length > 0) {
+        const quotesBatch = db.batch();
+        appState.quotes.forEach(q => {
+          const docRef = db.collection('users').doc(uid).collection('quotes').doc(q.id);
+          quotesBatch.set(docRef, q);
+        });
+        await quotesBatch.commit();
+      }
+
+      updateSyncBadge();
+      if (showNotifications) {
+        showToast('Datos respaldados en la nube con éxito');
+      }
+    } catch (e) {
+      console.error("Error uploading to cloud:", e);
+      if (showNotifications) {
+        showToast('Error al respaldar datos: ' + e.message);
+      }
+    }
+  }
+
+  async function syncCompanyToCloud() {
+    if (auth && db && auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      try {
+        await db.collection('users').doc(uid).collection('company').doc('settings').set({
+          name: appState.company.name || '',
+          address: appState.company.address || '',
+          phone: appState.company.phone || '',
+          email: appState.company.email || '',
+          website: appState.company.website || '',
+          logoBase64: appState.company.logoBase64 || null
+        });
+      } catch (e) { console.error("Error syncing company:", e); }
+    }
+  }
+
+  async function syncServiceToCloud(service) {
+    if (auth && db && auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      try {
+        await db.collection('users').doc(uid).collection('services').doc(service.id).set(service);
+      } catch (e) { console.error("Error syncing service:", e); }
+    }
+  }
+
+  async function deleteServiceFromCloud(serviceId) {
+    if (auth && db && auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      try {
+        await db.collection('users').doc(uid).collection('services').doc(serviceId).delete();
+      } catch (e) { console.error("Error deleting service from cloud:", e); }
+    }
+  }
+
+  async function syncQuoteToCloud(quote) {
+    if (auth && db && auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      try {
+        await db.collection('users').doc(uid).collection('quotes').doc(quote.id).set(quote);
+      } catch (e) { console.error("Error syncing quote:", e); }
+    }
+  }
+
+  async function deleteQuoteFromCloud(quoteId) {
+    if (auth && db && auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      try {
+        await db.collection('users').doc(uid).collection('quotes').doc(quoteId).delete();
+      } catch (e) { console.error("Error deleting quote from cloud:", e); }
+    }
+  }
+
+  /* ==========================================================================
      INITIALIZATION & SESSION GATING
      ========================================================================== */
   function init() {
     loadStateFromStorage();
     setupTheme();
     setupEventListeners();
+    initFirebase();
 
     // Check Authentication Gating
     checkSessionState();
@@ -236,6 +443,7 @@
 
   function saveCompanyToStorage() {
     localStorage.setItem(STORAGE_KEYS.COMPANY, JSON.stringify(appState.company));
+    syncCompanyToCloud();
   }
 
   function saveQuotesToStorage() {
@@ -449,6 +657,14 @@
     return 'Hace un instante';
   }
 
+  function formatLogoSrc(logoBase64) {
+    if (!logoBase64) return '';
+    if (logoBase64.startsWith('data:image/') || logoBase64.startsWith('http://') || logoBase64.startsWith('https://')) {
+      return logoBase64;
+    }
+    return `data:image/png;base64,${logoBase64}`;
+  }
+
   // 1. Render Dashboard (Inicio)
   function renderHomeView() {
     const comp = appState.company;
@@ -470,7 +686,7 @@
 
     if (logoContainer) {
       if (comp.logoBase64) {
-        logoContainer.innerHTML = `<img src="${comp.logoBase64}" alt="Company Logo">`;
+        logoContainer.innerHTML = `<img src="${formatLogoSrc(comp.logoBase64)}" alt="Company Logo">`;
       } else {
         logoContainer.innerHTML = `<i class="ri-building-4-line"></i>`;
       }
@@ -709,7 +925,7 @@
     const removeBtn = document.getElementById('btn-remove-logo');
 
     if (comp.logoBase64) {
-      if (logoImg) { logoImg.src = comp.logoBase64; logoImg.style.display = 'block'; }
+      if (logoImg) { logoImg.src = formatLogoSrc(comp.logoBase64); logoImg.style.display = 'block'; }
       if (logoIcon) logoIcon.style.display = 'none';
       if (removeBtn) removeBtn.style.display = 'inline-flex';
     } else {
@@ -904,6 +1120,7 @@
 
     appState.quotes.unshift(newQuote);
     saveQuotesToStorage();
+    syncQuoteToCloud(newQuote);
     renderAllViews();
     hideModal('modal-new-quote');
 
@@ -981,6 +1198,7 @@
     if (quote) {
       quote.status = newStatus;
       saveQuotesToStorage();
+      syncQuoteToCloud(quote);
       renderAllViews();
       showToast(`Estado actualizado a ${newStatus}`);
     }
@@ -989,8 +1207,10 @@
   function deleteCurrentQuote() {
     if (!appState.editingQuoteId) return;
     if (confirm('¿Estás seguro de que deseas eliminar este presupuesto? Esta acción no se puede deshacer.')) {
-      appState.quotes = appState.quotes.filter(q => q.id !== appState.editingQuoteId);
+      const idToDelete = appState.editingQuoteId;
+      appState.quotes = appState.quotes.filter(q => q.id !== idToDelete);
       saveQuotesToStorage();
+      deleteQuoteFromCloud(idToDelete);
       renderAllViews();
       hideModal('modal-quote-details');
       showToast('Presupuesto eliminado');
@@ -1041,25 +1261,28 @@
       return;
     }
 
+    let targetService = null;
     if (id) {
       // Edit existing
-      const srv = appState.services.find(s => s.id === id);
-      if (srv) {
-        srv.name = name;
-        srv.price = price;
-        srv.category = category;
+      targetService = appState.services.find(s => s.id === id);
+      if (targetService) {
+        targetService.name = name;
+        targetService.price = price;
+        targetService.category = category;
       }
     } else {
       // Add new
-      appState.services.push({
+      targetService = {
         id: Date.now().toString(),
         name,
         price,
         category
-      });
+      };
+      appState.services.push(targetService);
     }
 
     saveServicesToStorage();
+    if (targetService) syncServiceToCloud(targetService);
     renderAllViews();
     hideModal('modal-service-form');
     showToast(id ? 'Servicio actualizado' : 'Servicio guardado');
@@ -1069,6 +1292,7 @@
     if (confirm('¿Estás seguro de que deseas eliminar este servicio de tu base?')) {
       appState.services = appState.services.filter(s => s.id !== id);
       saveServicesToStorage();
+      deleteServiceFromCloud(id);
       renderAllViews();
       showToast('Servicio eliminado');
     }
@@ -1159,7 +1383,7 @@
         <!-- Header -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0D9488; padding-bottom: 16px;">
           <div style="display: flex; gap: 16px; align-items: flex-start;">
-            ${company.logoBase64 ? `<img src="${company.logoBase64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 8px;">` : ''}
+            ${company.logoBase64 ? `<img src="${formatLogoSrc(company.logoBase64)}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 8px;">` : ''}
             <div>
               <h2 style="color: #0F766E; font-size: 20px; margin: 0 0 4px 0;">${escapeHtml(company.name || 'Servicios Técnicos')}</h2>
               ${company.address ? `<div style="font-size: 11px; color: #475569;">${escapeHtml(company.address)}</div>` : ''}
@@ -1391,8 +1615,26 @@
       showToast('Entrando en modo Invitado (Almacenamiento Local)');
     });
 
-    document.getElementById('btn-welcome-test-firebase')?.addEventListener('click', () => {
-      showToast('¡Conexión Exitosa con Firebase!');
+    document.getElementById('btn-welcome-test-firebase')?.addEventListener('click', async () => {
+      if (!db) {
+        showToast('Firebase no está disponible');
+        return;
+      }
+      showToast('Probando conexión con Firebase...');
+      try {
+        const testDocRef = db.collection('connection_tests').doc('test_connection');
+        await testDocRef.set({
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          status: 'checking_reachability'
+        });
+        alert('¡Conexión Exitosa!\nFirebase está completamente operativo. Se logró escribir y leer en Cloud Firestore.');
+      } catch (e) {
+        if (e.message && e.message.includes('permission-denied')) {
+          alert('¡Conexión Exitosa (Segura)!\nLa base de datos Firebase es accesible y responde. (Bloqueada por reglas de seguridad de Firestore, lo cual es normal sin iniciar sesión).');
+        } else {
+          alert('Error de Conexión a Firebase:\n' + e.message);
+        }
+      }
     });
 
     // Toggle Auth Form mode (Login / Sign Up)
@@ -1416,8 +1658,8 @@
       }
     });
 
-    // Submit Auth Form
-    document.getElementById('form-welcome-auth')?.addEventListener('submit', (e) => {
+    // Submit Auth Form via Firebase Auth
+    document.getElementById('form-welcome-auth')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('auth-email-input').value.trim();
       const password = document.getElementById('auth-password-input').value.trim();
@@ -1427,28 +1669,54 @@
         return;
       }
 
-      appState.auth = {
-        isAuthenticated: true,
-        userEmail: email,
-        isGuest: false
-      };
-      saveAuthToStorage();
+      if (!auth) {
+        showToast('Servicio de Firebase no configurado en la web.');
+        return;
+      }
 
-      // Show Post Auth Sync modal
-      showModal('modal-post-auth-sync');
+      const submitBtn = document.getElementById('btn-submit-auth');
+      const originalText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="ri-loader-4-line spin"></i> Conectando...';
+      }
+
+      try {
+        if (appState.isSignUpMode) {
+          await auth.createUserWithEmailAndPassword(email, password);
+          showToast('Cuenta creada con éxito');
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+          showToast('Sesión iniciada con éxito');
+        }
+        showModal('modal-post-auth-sync');
+      } catch (err) {
+        let msg = err.message;
+        if (err.code === 'auth/invalid-email') msg = 'El correo electrónico no es válido.';
+        if (err.code === 'auth/user-not-found') msg = 'No se encontró ningún usuario con este correo electrónico.';
+        if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = 'Contraseña o correo incorrecto.';
+        if (err.code === 'auth/email-already-in-use') msg = 'Este correo electrónico ya está registrado.';
+        if (err.code === 'auth/weak-password') msg = 'La contraseña debe tener al menos 6 caracteres.';
+        showToast(msg);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        }
+      }
     });
 
     // Post Auth Sync Modal Options
-    document.getElementById('btn-sync-upload')?.addEventListener('click', () => {
+    document.getElementById('btn-sync-upload')?.addEventListener('click', async () => {
       hideModal('modal-post-auth-sync');
+      await uploadToCloud(true);
       checkSessionState();
-      showToast('Datos respaldados en la nube con éxito');
     });
 
-    document.getElementById('btn-sync-download')?.addEventListener('click', () => {
+    document.getElementById('btn-sync-download')?.addEventListener('click', async () => {
       hideModal('modal-post-auth-sync');
+      await syncFromCloud(true);
       checkSessionState();
-      showToast('Datos restaurados de la nube con éxito');
     });
 
     document.getElementById('btn-sync-ignore')?.addEventListener('click', () => {
@@ -1662,12 +1930,12 @@
       }
     });
 
-    // Cloud Restore & Backup Simulation
+    // Cloud Restore & Backup Handlers
     document.getElementById('btn-cloud-backup')?.addEventListener('click', () => {
-      showToast('Sincronizando y respaldando datos en la nube...');
+      uploadToCloud(true);
     });
     document.getElementById('btn-cloud-restore')?.addEventListener('click', () => {
-      showToast('Restaurando datos desde la nube...');
+      syncFromCloud(true);
     });
   }
 

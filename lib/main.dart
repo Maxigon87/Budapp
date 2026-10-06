@@ -34,7 +34,7 @@ void main() async {
       // Reemplaza 'YOUR_WEB_APP_ID' con el appId de la Web App registrada.
       const firebaseOptions = FirebaseOptions(
         apiKey: "AIzaSyCmBaNWCVu1cXP0F_-TnyA96Yg5NrZp-FY", 
-        appId: "YOUR_WEB_APP_ID", // TODO: Cambiar por el ID de la App Web desde Firebase Console
+        appId: "1:562409321853:web:955c45fefc8d8c98108814",
         messagingSenderId: "562409321853",
         projectId: "mgz-app-98294",
         storageBucket: "mgz-app-98294.firebasestorage.app",

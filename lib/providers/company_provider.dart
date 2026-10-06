@@ -46,6 +46,19 @@ class CompanyProvider extends ChangeNotifier {
     return bytes;
   }
 
+  String _cleanBase64(String input) {
+    if (input.contains(',')) {
+      return input.split(',').last;
+    }
+    return input;
+  }
+
+  String _formatBase64(String input) {
+    if (input.isEmpty) return '';
+    if (input.startsWith('data:image/')) return input;
+    return 'data:image/png;base64,$input';
+  }
+
   Future<void> _initLogoPath() async {
     // Migration check: if there is an old 'logoPath' but no 'hasLogo'
     final oldLogoPath = _box.get('logoPath') as String?;
@@ -57,7 +70,7 @@ class CompanyProvider extends ChangeNotifier {
         if (file.existsSync()) {
           final bytes = await file.readAsBytes();
           final compressedBytes = await _resizeLogo(bytes);
-          final base64Logo = base64Encode(compressedBytes);
+          final base64Logo = _formatBase64(base64Encode(compressedBytes));
           await _box.put('logoBase64', base64Logo);
           await _box.put('hasLogo', true);
         }
@@ -76,7 +89,7 @@ class CompanyProvider extends ChangeNotifier {
         if (!File(_resolvedLogoPath!).existsSync()) {
           final base64Logo = _box.get('logoBase64') as String?;
           if (base64Logo != null && base64Logo.isNotEmpty) {
-            final bytes = base64Decode(base64Logo);
+            final bytes = base64Decode(_cleanBase64(base64Logo));
             await File(_resolvedLogoPath!).writeAsBytes(bytes);
           } else {
             _resolvedLogoPath = null;
@@ -117,18 +130,21 @@ class CompanyProvider extends ChangeNotifier {
       try {
         final directory = await getApplicationDocumentsDirectory();
         final permanentPath = '${directory.path}/company_logo.png';
+        final sourceFile = File(logoPath);
         
-        if (logoPath != permanentPath) {
-          final sourceFile = File(logoPath);
-          if (sourceFile.existsSync()) {
-            final bytes = await sourceFile.readAsBytes();
-            final compressedBytes = await _resizeLogo(bytes);
+        if (sourceFile.existsSync()) {
+          final bytes = await sourceFile.readAsBytes();
+          final compressedBytes = await _resizeLogo(bytes);
+          if (logoPath != permanentPath) {
             await File(permanentPath).writeAsBytes(compressedBytes);
-            final base64Logo = base64Encode(compressedBytes);
-            await _box.put('logoBase64', base64Logo);
-            await _box.put('hasLogo', true);
-            _resolvedLogoPath = permanentPath;
           }
+          final base64Logo = _formatBase64(base64Encode(compressedBytes));
+          await _box.put('logoBase64', base64Logo);
+          await _box.put('hasLogo', true);
+          _resolvedLogoPath = permanentPath;
+        } else if (_box.get('logoBase64') != null) {
+          await _box.put('hasLogo', true);
+          _resolvedLogoPath = permanentPath;
         }
       } catch (e) {
         debugPrint("Error saving logo file: $e");
@@ -182,7 +198,8 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        final logoBase64 = _box.get('logoBase64') as String?;
+        final logoBase64Raw = _box.get('logoBase64') as String?;
+        final logoBase64 = logoBase64Raw != null ? _formatBase64(logoBase64Raw) : null;
         await firestore
             .collection('users')
             .doc(user.uid)
@@ -228,15 +245,16 @@ class CompanyProvider extends ChangeNotifier {
           await _box.put('email', data['email'] ?? '');
           await _box.put('website', data['website'] ?? '');
           
-          final logoBase64 = data['logoBase64'] as String?;
-          if (logoBase64 != null && logoBase64.isNotEmpty) {
+          final logoBase64Raw = data['logoBase64'] as String?;
+          if (logoBase64Raw != null && logoBase64Raw.isNotEmpty) {
+            final logoBase64 = _formatBase64(logoBase64Raw);
             await _box.put('logoBase64', logoBase64);
             await _box.put('hasLogo', true);
             
             final directory = await getApplicationDocumentsDirectory();
             _resolvedLogoPath = '${directory.path}/company_logo.png';
             try {
-              final bytes = base64Decode(logoBase64);
+              final bytes = base64Decode(_cleanBase64(logoBase64));
               await File(_resolvedLogoPath!).writeAsBytes(bytes);
             } catch (e) {
               debugPrint("Error writing downloaded logo file: $e");
@@ -273,7 +291,8 @@ class CompanyProvider extends ChangeNotifier {
     final user = auth.currentUser;
     if (user != null) {
       try {
-        final logoBase64 = _box.get('logoBase64') as String?;
+        final logoBase64Raw = _box.get('logoBase64') as String?;
+        final logoBase64 = logoBase64Raw != null ? _formatBase64(logoBase64Raw) : null;
         await firestore
             .collection('users')
             .doc(user.uid)
