@@ -38,7 +38,7 @@
       
       <!-- Brand Logo Card -->
       <div class="welcome-logo-card">
-        <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="welcome-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
+        <img src="assets/images/budapp-logo.png" alt="Budapp Logo" class="welcome-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
       </div>
 
       <!-- Welcome Titles -->
@@ -47,35 +47,13 @@
 
       <p class="welcome-tagline">Gestiona tus presupuestos, clientes y servicios en cualquier dispositivo.</p>
 
-      <!-- Welcome View Option 1: Action Selector Buttons -->
-      <div id="welcome-options-box" class="welcome-actions-box">
-        <button class="btn btn-accent btn-block btn-lg" id="btn-welcome-auth">
-          <i class="ri-login-box-line"></i> Iniciar Sesión / Crear Cuenta
-        </button>
-
-        <button class="btn btn-outline btn-block btn-lg" id="btn-welcome-guest">
-          <i class="ri-user-3-line"></i> Entrar como Invitado
-        </button>
-
-        <div class="welcome-divider">
-          <span>Configuración</span>
-        </div>
-
-        <button class="btn btn-subtle-blue btn-block" id="btn-welcome-test-firebase">
-          <i class="ri-cloud-line"></i> Probar Conexión con Firebase
-        </button>
-      </div>
-
-      <!-- Welcome View Option 2: Authentication Form (Hidden by default) -->
-      <div id="welcome-auth-box" class="welcome-auth-card card" style="display: none;">
-        <div class="auth-header">
-          <button class="btn-text" id="btn-back-to-welcome-options">
-            <i class="ri-arrow-left-line"></i> Volver
-          </button>
+      <!-- Welcome View: Authentication Form -->
+      <div id="welcome-auth-box" class="welcome-auth-card card">
+        <div class="auth-header text-center">
           <h3 id="auth-title">Iniciar Sesión</h3>
         </div>
 
-        <p class="auth-subtitle" id="auth-subtitle-text">Accede a tu cuenta para sincronizar tus presupuestos en la nube.</p>
+        <p class="auth-subtitle text-center" id="auth-subtitle-text">Accede a tu cuenta para sincronizar tus presupuestos en la nube.</p>
 
         <form id="form-welcome-auth" class="margin-top-md">
           <div class="form-group">
@@ -115,7 +93,7 @@
     <header class="top-bar">
       <div class="top-bar-left">
         <div class="brand-logo-wrap">
-          <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="brand-logo-img" id="app-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
+          <img src="assets/images/budapp-logo.png" alt="Budapp Logo" class="brand-logo-img" id="app-logo-img" onerror="this.onerror=null; this.src='favicon.png'">
         </div>
         <div class="brand-title-wrap">
           <span class="brand-title">Budapp</span>
@@ -144,7 +122,7 @@
     <!-- Desktop Sidebar Navigation -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <img src="../assets/images/budapp-logo.png" alt="Budapp Logo" class="sidebar-logo" onerror="this.onerror=null; this.src='favicon.png'">
+        <img src="assets/images/budapp-logo.png" alt="Budapp Logo" class="sidebar-logo" onerror="this.onerror=null; this.src='favicon.png'">
         <span class="sidebar-brand-name">Budapp</span>
       </div>
       <nav class="sidebar-nav">

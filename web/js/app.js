@@ -341,8 +341,8 @@
     const optionsBox = document.getElementById('welcome-options-box');
     const authBox = document.getElementById('welcome-auth-box');
 
-    if (optionsBox) optionsBox.style.display = 'flex';
-    if (authBox) authBox.style.display = 'none';
+    if (optionsBox) optionsBox.style.display = 'none';
+    if (authBox) authBox.style.display = 'block';
   }
 
   function saveAuthToStorage() {
